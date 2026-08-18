@@ -1,45 +1,87 @@
 <div class="tta-config-part">
 <div class="tta-config-body">
 
+  <p class="tta-breadcrumb">{{localize "TTA.Config.Breadcrumb"}} <strong>{{localize "TTA.Config.Open"}}</strong> &middot; {{localize "TTA.Config.DraftHint"}}</p>
+
+  {{#if hasPendingImport}}
+    <div class="tta-panel">
+      <div class="tta-panel-head">
+        <div>
+          <span class="tta-kicker">{{localize "TTA.Import.StagedHeading"}}</span>
+          <p>{{localize "TTA.Import.PendingEvents"}} (<span class="tta-num">{{pendingEventCount}}</span>)</p>
+        </div>
+        <button type="button" class="tta-ghost tta-compact" data-action="discardImport">{{localize "TTA.Import.DiscardEvents"}}</button>
+      </div>
+    </div>
+  {{/if}}
+
   {{#if errors.length}}
-    <div class="tta-banner tta-banner-error" role="alert">
-      <h4><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> {{localize "TTA.Config.ErrorsHeading"}}</h4>
-      <ul>{{#each errors}}<li>{{this}}</li>{{/each}}</ul>
+    <div class="tta-panel tta-panel-error" role="alert">
+      <span class="tta-kicker">{{localize "TTA.Config.ErrorsHeading"}}</span>
+      <ul>{{#each errors}}<li>&middot; {{this}}</li>{{/each}}</ul>
     </div>
   {{/if}}
 
   {{#if warnings.length}}
-    <div class="tta-banner tta-banner-warning">
-      <h4><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> {{localize "TTA.Config.WarningsHeading"}}</h4>
-      <ul>{{#each warnings}}<li>{{this}}</li>{{/each}}</ul>
+    <div class="tta-panel tta-panel-warning">
+      <span class="tta-kicker">{{localize "TTA.Config.WarningsHeading"}}</span>
+      <ul>{{#each warnings}}<li>&middot; {{this}}</li>{{/each}}</ul>
     </div>
   {{/if}}
 
-  <fieldset class="tta-fieldset">
-    <legend>{{localize "TTA.Config.StructureHeading"}}</legend>
-    <p class="tta-hint">{{localize "TTA.Config.StructureHint"}}</p>
-
-    <div class="tta-field-row">
-      <label for="tta-months">{{localize "TTA.Config.MonthsPerYear"}}</label>
-      <input id="tta-months" type="number" name="monthsPerYear" data-structure
-             min="{{limits.MONTHS_MIN}}" max="{{limits.MONTHS_MAX}}" step="1" value="{{calendar.monthsPerYear}}">
+  <section class="tta-section">
+    <div class="tta-section-head">
+      <span class="tta-kicker">{{localize "TTA.Config.StructureHeading"}}</span>
+      <span class="tta-meta">{{localize "TTA.Config.StructureHint"}}</span>
     </div>
-
-    <div class="tta-field-row">
-      <label for="tta-days">{{localize "TTA.Config.DaysPerMonth"}}</label>
-      <input id="tta-days" type="number" name="daysPerMonth" data-structure
-             min="{{limits.DAYS_MIN}}" max="{{limits.DAYS_MAX}}" step="1" value="{{calendar.daysPerMonth}}">
+    <div class="tta-field-grid">
+      <div class="tta-field">
+        <label for="tta-months">{{localize "TTA.Config.MonthsPerYear"}}</label>
+        <input id="tta-months" type="number" name="monthsPerYear" data-structure
+               min="{{limits.MONTHS_MIN}}" max="{{limits.MONTHS_MAX}}" step="1" value="{{calendar.monthsPerYear}}">
+      </div>
+      <div class="tta-field">
+        <label for="tta-days">{{localize "TTA.Config.DaysPerMonth"}}</label>
+        <input id="tta-days" type="number" name="daysPerMonth" data-structure
+               min="{{limits.DAYS_MIN}}" max="{{limits.DAYS_MAX}}" step="1" value="{{calendar.daysPerMonth}}">
+      </div>
+      <div class="tta-field">
+        <label for="tta-weekdays">{{localize "TTA.Config.WeekdayCount"}}</label>
+        <input id="tta-weekdays" type="number" name="weekdayCount" data-structure
+               min="{{limits.WEEKDAYS_MIN}}" max="{{limits.WEEKDAYS_MAX}}" step="1" value="{{weekdayCount}}">
+      </div>
     </div>
+  </section>
 
-    <div class="tta-field-row">
-      <label for="tta-weekdays">{{localize "TTA.Config.WeekdayCount"}}</label>
-      <input id="tta-weekdays" type="number" name="weekdayCount" data-structure
-             min="{{limits.WEEKDAYS_MIN}}" max="{{limits.WEEKDAYS_MAX}}" step="1" value="{{weekdayCount}}">
+  <section class="tta-section">
+    <div class="tta-section-head">
+      <span class="tta-kicker">{{localize "TTA.Config.CurrentDateHeading"}}</span>
     </div>
-  </fieldset>
+    <div class="tta-field-grid tta-field-grid-date">
+      <div class="tta-field">
+        <label for="tta-current-year">{{localize "TTA.Common.Year"}}</label>
+        <input id="tta-current-year" type="number" name="currentYear" min="{{limits.YEAR_MIN}}" step="1" value="{{calendar.currentDate.year}}">
+      </div>
+      <div class="tta-field">
+        <label for="tta-current-month">{{localize "TTA.Common.Month"}}</label>
+        <select id="tta-current-month" name="currentMonth">
+          {{#each monthChoices}}
+            <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </div>
+      <div class="tta-field">
+        <label for="tta-current-day">{{localize "TTA.Common.Day"}}</label>
+        <input id="tta-current-day" type="number" name="currentDay" min="1" max="{{calendar.daysPerMonth}}" step="1" value="{{calendar.currentDate.day}}">
+      </div>
+    </div>
+  </section>
 
-  <fieldset class="tta-fieldset">
-    <legend>{{localize "TTA.Config.MonthNames"}}</legend>
+  <section class="tta-section">
+    <div class="tta-section-head">
+      <span class="tta-kicker">{{localize "TTA.Config.MonthNames"}}</span>
+      <button type="button" class="tta-ghost tta-compact" data-action="resetNames">{{localize "TTA.Config.ResetNames"}}</button>
+    </div>
     <div class="tta-name-grid">
       {{#each monthNames}}
         <label class="tta-name-field">
@@ -49,33 +91,99 @@
         </label>
       {{/each}}
     </div>
-  </fieldset>
+  </section>
 
-  <fieldset class="tta-fieldset">
-    <legend>{{localize "TTA.Config.WeekdayNames"}}</legend>
-    <div class="tta-name-grid">
+  <section class="tta-section">
+    <div class="tta-section-head">
+      <span class="tta-kicker">{{localize "TTA.Config.WeekdayNames"}}</span>
+    </div>
+    <div class="tta-weekday-grid">
       {{#each weekdayNames}}
-        <label class="tta-name-field">
-          <span class="tta-name-index">{{number}}</span>
-          <input type="text" data-weekday-name value="{{name}}"
-                 aria-label="{{localize "TTA.Config.WeekdayNameAria"}} {{number}}">
-        </label>
+        <input type="text" data-weekday-name value="{{name}}"
+               aria-label="{{localize "TTA.Config.WeekdayNameAria"}} {{number}}">
       {{/each}}
     </div>
-    <button type="button" class="tta-secondary" data-action="resetNames">
-      <i class="fa-solid fa-rotate-left" aria-hidden="true"></i> {{localize "TTA.Config.ResetNames"}}
-    </button>
-  </fieldset>
+  </section>
 
-  <fieldset class="tta-fieldset">
-    <legend>{{localize "TTA.Moons.Heading"}}</legend>
-    <p class="tta-hint">{{localize "TTA.Moons.Hint"}}</p>
+  <section class="tta-section">
+    <div class="tta-section-head">
+      <span class="tta-kicker">{{localize "TTA.Config.AgesHeading"}}</span>
+      <span class="tta-meta">{{localize "TTA.Config.AgesHint"}}</span>
+    </div>
+
+    {{#if hasAges}}
+      <ol class="tta-row-editor">
+        {{#each ages}}
+          <li class="tta-editor-row" data-age-row data-age-id="{{id}}" style="--tta-tint: {{color}}">
+            <div class="tta-editor-main">
+              <label class="tta-grow">
+                <span>{{localize "TTA.Ages.Name"}}</span>
+                <input type="text" data-field="name" value="{{name}}">
+              </label>
+              <label>
+                <span>{{localize "TTA.Ages.StartYear"}}</span>
+                <input type="number" data-field="startYear" min="1" step="1" value="{{startYear}}">
+              </label>
+              <label>
+                <span>{{localize "TTA.Ages.Duration"}}</span>
+                <input type="number" data-field="durationYears" min="1" step="1" value="{{durationYears}}">
+              </label>
+              <p class="tta-editor-derived">
+                <span>{{localize "TTA.Ages.EndYear"}}</span>
+                <strong class="tta-num">{{endYear}}</strong>
+              </p>
+              <label class="tta-color">
+                <span>{{localize "TTA.Ages.Color"}}</span>
+                <input type="color" data-field="color" value="{{color}}">
+              </label>
+            </div>
+
+            <label class="tta-editor-description">
+              <span>{{localize "TTA.Ages.Description"}}</span>
+              <textarea data-field="description" rows="2">{{description}}</textarea>
+            </label>
+
+            <div class="tta-editor-footer">
+              <label class="tta-checkbox">
+                <input type="checkbox" data-field="playerVisible" {{#if playerVisible}}checked{{/if}}>
+                <span>{{localize "TTA.Ages.PlayerVisible"}}</span>
+              </label>
+              <span class="tta-editor-controls">
+                <button type="button" class="tta-icon-only" data-action="moveAgeUp"
+                        data-tooltip="{{localize "TTA.Common.MoveUp"}}" aria-label="{{localize "TTA.Common.MoveUp"}}">
+                  <i class="fa-solid fa-arrow-up" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="tta-icon-only" data-action="moveAgeDown"
+                        data-tooltip="{{localize "TTA.Common.MoveDown"}}" aria-label="{{localize "TTA.Common.MoveDown"}}">
+                  <i class="fa-solid fa-arrow-down" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="tta-icon-only tta-danger" data-action="removeAge"
+                        data-tooltip="{{localize "TTA.Common.Remove"}}" aria-label="{{localize "TTA.Common.Remove"}}">
+                  <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                </button>
+              </span>
+            </div>
+          </li>
+        {{/each}}
+      </ol>
+    {{else}}
+      <p class="tta-empty">{{localize "TTA.Config.NoAges"}}</p>
+    {{/if}}
+
+    <div><button type="button" data-action="addAge">{{localize "TTA.Config.AddAge"}}</button></div>
+  </section>
+
+  <section class="tta-section">
+    <div class="tta-section-head">
+      <span class="tta-kicker">{{localize "TTA.Moons.Heading"}}</span>
+      <span class="tta-meta">{{localize "TTA.Moons.Hint"}}</span>
+    </div>
 
     {{#if hasMoons}}
-      <ol class="tta-moon-editor">
+      <ol class="tta-row-editor">
         {{#each moons}}
-          <li class="tta-moon-row" data-moon-row data-moon-id="{{id}}" style="--tta-accent: {{color}}">
-            <div class="tta-moon-main">
+          <li class="tta-editor-row" data-moon-row data-moon-id="{{id}}" style="--tta-tint: {{color}}">
+            <div class="tta-editor-main">
               <span class="tta-moon-preview" aria-hidden="true">
                 <span class="tta-moon-disc {{#if waxing}}tta-waxing{{else}}tta-waning{{/if}} {{#if gibbous}}tta-gibbous{{/if}}"
                       style="--tta-moon-color: {{color}}; --tta-illumination: {{illumination}}; --tta-terminator: {{terminator}}"></span>
@@ -106,8 +214,8 @@
               </label>
             </div>
 
-            <div class="tta-moon-footer">
-              <p class="tta-moon-phase-label">
+            <div class="tta-editor-footer">
+              <p class="tta-editor-derived">
                 <span>{{localize "TTA.Moons.PhaseToday"}}</span>
                 <strong>{{phaseLabel}}</strong>
               </p>
@@ -119,15 +227,18 @@
                 <input type="checkbox" data-field="playerVisible" {{#if playerVisible}}checked{{/if}}>
                 <span>{{localize "TTA.Moons.PlayerVisible"}}</span>
               </label>
-              <span class="tta-moon-controls">
-                <button type="button" data-action="moveMoonUp" data-tooltip="{{localize "TTA.Common.MoveUp"}}" aria-label="{{localize "TTA.Common.MoveUp"}}">
+              <span class="tta-editor-controls">
+                <button type="button" class="tta-icon-only" data-action="moveMoonUp"
+                        data-tooltip="{{localize "TTA.Common.MoveUp"}}" aria-label="{{localize "TTA.Common.MoveUp"}}">
                   <i class="fa-solid fa-arrow-up" aria-hidden="true"></i>
                 </button>
-                <button type="button" data-action="moveMoonDown" data-tooltip="{{localize "TTA.Common.MoveDown"}}" aria-label="{{localize "TTA.Common.MoveDown"}}">
+                <button type="button" class="tta-icon-only" data-action="moveMoonDown"
+                        data-tooltip="{{localize "TTA.Common.MoveDown"}}" aria-label="{{localize "TTA.Common.MoveDown"}}">
                   <i class="fa-solid fa-arrow-down" aria-hidden="true"></i>
                 </button>
-                <button type="button" class="tta-danger" data-action="removeMoon">
-                  <i class="fa-solid fa-trash" aria-hidden="true"></i> {{localize "TTA.Common.Remove"}}
+                <button type="button" class="tta-icon-only tta-danger" data-action="removeMoon"
+                        data-tooltip="{{localize "TTA.Common.Remove"}}" aria-label="{{localize "TTA.Common.Remove"}}">
+                  <i class="fa-solid fa-trash" aria-hidden="true"></i>
                 </button>
               </span>
             </div>
@@ -139,144 +250,37 @@
     {{/if}}
 
     {{#if canAddMoon}}
-      <button type="button" class="tta-secondary" data-action="addMoon">
-        <i class="fa-solid fa-moon" aria-hidden="true"></i> {{localize "TTA.Moons.AddMoon"}}
-      </button>
+      <div><button type="button" data-action="addMoon">{{localize "TTA.Moons.AddMoon"}}</button></div>
     {{else}}
       <p class="tta-hint">{{localize "TTA.Moons.LimitHint" max=moonsMax}}</p>
     {{/if}}
-  </fieldset>
+  </section>
 
-  <fieldset class="tta-fieldset">
-    <legend>{{localize "TTA.Config.CurrentDateHeading"}}</legend>
-    <div class="tta-field-row">
-      <label for="tta-current-year">{{localize "TTA.Common.Year"}}</label>
-      <input id="tta-current-year" type="number" name="currentYear" min="{{limits.YEAR_MIN}}" step="1" value="{{calendar.currentDate.year}}">
+  <section class="tta-section">
+    <div class="tta-section-head">
+      <span class="tta-kicker">{{localize "TTA.Import.Heading"}}</span>
     </div>
-    <div class="tta-field-row">
-      <label for="tta-current-month">{{localize "TTA.Common.Month"}}</label>
-      <select id="tta-current-month" name="currentMonth">
-        {{#each monthChoices}}
-          <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
-        {{/each}}
-      </select>
+    <div class="tta-inline-row">
+      <label class="tta-checkbox">
+        <input type="checkbox" data-export-events checked>
+        <span>{{localize "TTA.Import.IncludeEvents"}}</span>
+      </label>
+      <button type="button" class="tta-compact" data-action="exportCalendar">{{localize "TTA.Import.Export"}}</button>
+      <button type="button" class="tta-compact" data-action="importCalendar">{{localize "TTA.Import.Import"}}</button>
+      <span class="tta-meta">{{localize "TTA.Import.NotesExcluded"}}</span>
     </div>
-    <div class="tta-field-row">
-      <label for="tta-current-day">{{localize "TTA.Common.Day"}}</label>
-      <input id="tta-current-day" type="number" name="currentDay" min="1" max="{{calendar.daysPerMonth}}" step="1" value="{{calendar.currentDate.day}}">
-    </div>
-  </fieldset>
-
-  <fieldset class="tta-fieldset">
-    <legend>{{localize "TTA.Config.AgesHeading"}}</legend>
-    <p class="tta-hint">{{localize "TTA.Config.AgesHint"}}</p>
-
-    {{#if hasAges}}
-      <ol class="tta-age-editor">
-        {{#each ages}}
-          <li class="tta-age-row" data-age-row data-age-id="{{id}}" style="--tta-accent: {{color}}">
-            <div class="tta-age-main">
-              <label class="tta-grow">
-                <span>{{localize "TTA.Ages.Name"}}</span>
-                <input type="text" data-field="name" value="{{name}}">
-              </label>
-              <label>
-                <span>{{localize "TTA.Ages.StartYear"}}</span>
-                <input type="number" data-field="startYear" min="1" step="1" value="{{startYear}}">
-              </label>
-              <label>
-                <span>{{localize "TTA.Ages.Duration"}}</span>
-                <input type="number" data-field="durationYears" min="1" step="1" value="{{durationYears}}">
-              </label>
-              <p class="tta-age-endyear">
-                <span>{{localize "TTA.Ages.EndYear"}}</span>
-                <strong>{{endYear}}</strong>
-              </p>
-              <label class="tta-color">
-                <span>{{localize "TTA.Ages.Color"}}</span>
-                <input type="color" data-field="color" value="{{color}}">
-              </label>
-            </div>
-
-            <label class="tta-age-description">
-              <span>{{localize "TTA.Ages.Description"}}</span>
-              <textarea data-field="description" rows="2">{{description}}</textarea>
-            </label>
-
-            <div class="tta-age-footer">
-              <label class="tta-checkbox">
-                <input type="checkbox" data-field="playerVisible" {{#if playerVisible}}checked{{/if}}>
-                <span>{{localize "TTA.Ages.PlayerVisible"}}</span>
-              </label>
-              <span class="tta-age-controls">
-                <button type="button" data-action="moveAgeUp" data-tooltip="{{localize "TTA.Common.MoveUp"}}" aria-label="{{localize "TTA.Common.MoveUp"}}">
-                  <i class="fa-solid fa-arrow-up" aria-hidden="true"></i>
-                </button>
-                <button type="button" data-action="moveAgeDown" data-tooltip="{{localize "TTA.Common.MoveDown"}}" aria-label="{{localize "TTA.Common.MoveDown"}}">
-                  <i class="fa-solid fa-arrow-down" aria-hidden="true"></i>
-                </button>
-                <button type="button" class="tta-danger" data-action="removeAge">
-                  <i class="fa-solid fa-trash" aria-hidden="true"></i> {{localize "TTA.Common.Remove"}}
-                </button>
-              </span>
-            </div>
-          </li>
-        {{/each}}
-      </ol>
-    {{else}}
-      <p class="tta-empty">{{localize "TTA.Config.NoAges"}}</p>
-    {{/if}}
-
-    <button type="button" class="tta-secondary" data-action="addAge">
-      <i class="fa-solid fa-plus" aria-hidden="true"></i> {{localize "TTA.Config.AddAge"}}
-    </button>
-  </fieldset>
-
-  <fieldset class="tta-fieldset">
-    <legend>{{localize "TTA.Config.StorageHeading"}}</legend>
-    <p class="tta-hint">
-      {{#if folderName}}
-        {{localize "TTA.Config.FolderLinked"}} <strong>{{folderName}}</strong>
-      {{else}}
-        {{localize "TTA.Config.FolderMissing"}}
-      {{/if}}
-    </p>
-    <button type="button" class="tta-secondary" data-action="repairFolder">
-      <i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> {{localize "TTA.Config.RepairFolder"}}
-    </button>
-  </fieldset>
-
-  <fieldset class="tta-fieldset">
-    <legend>{{localize "TTA.Import.Heading"}}</legend>
-    <p class="tta-hint">{{localize "TTA.Import.Hint"}}</p>
-
-    {{#if hasPendingImport}}
-      <p class="tta-banner tta-banner-warning">
-        <i class="fa-solid fa-file-import" aria-hidden="true"></i>
-        {{localize "TTA.Import.PendingEvents"}} ({{pendingEventCount}})
-        <button type="button" data-action="discardImport">{{localize "TTA.Import.DiscardEvents"}}</button>
-      </p>
-    {{/if}}
-
-    <label class="tta-checkbox">
-      <input type="checkbox" data-export-events checked>
-      <span>{{localize "TTA.Import.IncludeEvents"}}</span>
-    </label>
-
-    <div class="tta-button-row">
-      <button type="button" class="tta-secondary" data-action="exportCalendar">
-        <i class="fa-solid fa-file-export" aria-hidden="true"></i> {{localize "TTA.Import.Export"}}
-      </button>
-      <button type="button" class="tta-secondary" data-action="importCalendar">
-        <i class="fa-solid fa-file-import" aria-hidden="true"></i> {{localize "TTA.Import.Import"}}
-      </button>
-    </div>
-  </fieldset>
+  </section>
 </div>
 
 <footer class="tta-form-footer">
-  <button type="submit" class="tta-primary">
-    <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> {{localize "TTA.Config.Save"}}
-  </button>
+  <span class="tta-meta">
+    {{#if folderName}}
+      {{localize "TTA.Config.FolderLinked"}} <span class="tta-key">{{folderName}}</span>
+    {{else}}
+      {{localize "TTA.Config.FolderMissing"}}
+    {{/if}}
+  </span>
+  <button type="button" class="tta-ghost tta-compact" data-action="repairFolder">{{localize "TTA.Config.RepairFolder"}}</button>
+  <button type="submit" class="tta-primary">{{localize "TTA.Config.Save"}}</button>
 </footer>
 </div>

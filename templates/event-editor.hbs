@@ -2,67 +2,81 @@
 <div class="tta-form-body">
 
   {{#if isPromotion}}
-    <div class="tta-banner tta-banner-info">
-      <h4><i class="fa-solid fa-arrow-up-right-dots" aria-hidden="true"></i> {{localize "TTA.EventEditor.PromoteHeading"}}</h4>
-      <p>{{localize "TTA.EventEditor.PromoteBody" }}</p>
-      <p class="tta-source-note">
-        <strong>{{sourceNote.title}}</strong> — {{sourceNote.authorName}}
-      </p>
+    <div class="tta-panel">
+      <span class="tta-kicker">{{localize "TTA.EventEditor.PromoteHeading"}}</span>
+      <p>{{sourceNote.title}} &mdash; {{sourceNote.authorName}} &middot; <span class="tta-key">{{sourceNote.dateKey}}</span></p>
+      <p>{{localize "TTA.EventEditor.PromoteBody"}}</p>
       {{#if sourceExcerpt}}
         <blockquote class="tta-source-excerpt">{{sourceExcerpt}}</blockquote>
       {{/if}}
     </div>
   {{/if}}
 
-  <div class="tta-field-row tta-field-stack">
+  <div class="tta-field">
     <label for="tta-event-title">{{localize "TTA.EventEditor.TitleField"}}</label>
     <input id="tta-event-title" type="text" name="title" value="{{title}}" required
            placeholder="{{localize "TTA.EventEditor.TitlePlaceholder"}}">
   </div>
 
-  <fieldset class="tta-fieldset tta-date-fieldset">
-    <legend>{{localize "TTA.EventEditor.DateHeading"}}</legend>
-    <div class="tta-field-inline">
-      <label>
-        <span>{{localize "TTA.Common.Year"}}</span>
-        <input type="number" name="year" min="1" step="1" value="{{year}}" required>
-      </label>
-      <label>
-        <span>{{localize "TTA.Common.Month"}}</span>
-        <select name="month">
-          {{#each monthChoices}}
-            <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
-          {{/each}}
-        </select>
-      </label>
-      <label>
-        <span>{{localize "TTA.Common.Day"}}</span>
-        <input type="number" name="day" min="1" max="{{maxDay}}" step="1" value="{{day}}" required>
-      </label>
+  <div class="tta-field-grid tta-field-grid-date">
+    <div class="tta-field">
+      <label for="tta-event-year">{{localize "TTA.Common.Year"}}</label>
+      <input id="tta-event-year" type="number" name="year" min="1" step="1" value="{{year}}" required>
     </div>
-  </fieldset>
+    <div class="tta-field">
+      <label for="tta-event-month">{{localize "TTA.Common.Month"}}</label>
+      <select id="tta-event-month" name="month">
+        {{#each monthChoices}}
+          <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+        {{/each}}
+      </select>
+    </div>
+    <div class="tta-field">
+      <label for="tta-event-day">{{localize "TTA.Common.Day"}}</label>
+      <input id="tta-event-day" type="number" name="day" min="1" max="{{maxDay}}" step="1" value="{{day}}" required>
+    </div>
+  </div>
 
-  <div class="tta-field-inline">
-    <label>
-      <span>{{localize "TTA.EventEditor.VisibilityField"}}</span>
-      <select name="visibility">
+  <div class="tta-field">
+    <span id="tta-event-description-label">{{localize "TTA.EventEditor.DescriptionField"}}</span>
+    <div data-editor-host class="tta-editor-host" aria-labelledby="tta-event-description-label"></div>
+  </div>
+
+  <div class="tta-field-grid">
+    <div class="tta-field">
+      <label for="tta-event-visibility">{{localize "TTA.EventEditor.VisibilityField"}}</label>
+      <select id="tta-event-visibility" name="visibility">
         {{#each visibilityChoices}}
           <option value="{{value}}" {{#if (ttaEq value ../visibility)}}selected{{/if}}>{{label}}</option>
         {{/each}}
       </select>
-    </label>
-    <label>
-      <span>{{localize "TTA.EventEditor.IconField"}}</span>
-      <select name="icon">
-        {{#each iconChoices}}
-          <option value="{{value}}" {{#if selected}}selected{{/if}}>{{value}}</option>
-        {{/each}}
-      </select>
-    </label>
-    <label class="tta-color">
+    </div>
+
+    <div class="tta-field">
       <span>{{localize "TTA.EventEditor.ColorField"}}</span>
-      <input type="color" name="color" value="{{color}}">
-    </label>
+      {{!-- The swatches are shortcuts into the colour input beside them, which
+            stays the field that is actually submitted. --}}
+      <div class="tta-swatches">
+        {{#each colorSwatches}}
+          <button type="button" class="tta-swatch" data-action="pickColor" data-color="{{this}}"
+                  style="--tta-tint: {{this}}" data-tooltip="{{this}}" aria-label="{{this}}"></button>
+        {{/each}}
+        <input type="color" name="color" value="{{color}}" aria-label="{{localize "TTA.EventEditor.ColorField"}}">
+      </div>
+    </div>
+
+    <div class="tta-field">
+      <span>{{localize "TTA.EventEditor.IconField"}}</span>
+      <div class="tta-icon-picker" role="radiogroup" aria-label="{{localize "TTA.EventEditor.IconField"}}">
+        {{#each iconChoices}}
+          <label class="tta-icon-cell" data-tooltip="{{value}}">
+            <input type="radio" name="icon" value="{{value}}" {{#if selected}}checked{{/if}}>
+            <i class="{{value}}" aria-hidden="true"></i>
+            <span class="tta-sr-only">{{value}}</span>
+          </label>
+        {{/each}}
+      </div>
+    </div>
   </div>
 
   {{#if isPromotion}}
@@ -72,16 +86,10 @@
     </label>
     <p class="tta-hint">{{localize "TTA.EventEditor.ShareSourceHint"}}</p>
   {{/if}}
-
-  <div class="tta-field-row tta-field-stack">
-    <span class="tta-label">{{localize "TTA.EventEditor.DescriptionField"}}</span>
-    <div data-editor-host class="tta-editor-host"></div>
-  </div>
 </div>
 
 <footer class="tta-form-footer">
   <button type="submit" class="tta-primary">
-    <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
     {{#if event}}{{localize "TTA.Common.SaveChanges"}}{{else}}{{localize "TTA.EventEditor.Create"}}{{/if}}
   </button>
 </footer>

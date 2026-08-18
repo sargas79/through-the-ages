@@ -2,20 +2,23 @@
 <div class="tta-form-body">
 
   <p class="tta-form-context">
-    <i class="fa-solid {{#if isMonthNote}}fa-calendar-week{{else}}fa-calendar-day{{/if}}" aria-hidden="true"></i>
-    {{#if isMonthNote}}{{localize "TTA.Notes.MonthScope"}}{{else}}{{localize "TTA.Notes.DayScope"}}{{/if}}
-    <strong>{{dateLabel}}</strong>
+    <span>{{#if isMonthNote}}{{localize "TTA.Notes.MonthScope"}}{{else}}{{localize "TTA.Notes.DayScope"}}{{/if}} {{dateLabel}}</span>
     <span class="tta-key" data-tooltip="{{localize "TTA.Notes.DateKeyTooltip"}}">{{dateKey}}</span>
   </p>
 
-  <div class="tta-field-row tta-field-stack">
+  <div class="tta-field">
     <label for="tta-note-title">{{localize "TTA.Notes.TitleField"}}</label>
     <input id="tta-note-title" type="text" name="title" value="{{note.title}}" required
            placeholder="{{localize "TTA.Notes.TitlePlaceholder"}}">
   </div>
 
+  <div class="tta-field">
+    <span id="tta-note-content-label">{{localize "TTA.Notes.ContentField"}}</span>
+    <div data-editor-host class="tta-editor-host" aria-labelledby="tta-note-content-label"></div>
+  </div>
+
   {{#if canSetVisibility}}
-    <div class="tta-field-row tta-field-stack">
+    <div class="tta-field">
       <label for="tta-note-visibility">{{localize "TTA.Notes.VisibilityField"}}</label>
       <select id="tta-note-visibility" name="visibility">
         {{#each visibilityChoices}}
@@ -26,16 +29,10 @@
   {{/if}}
 
   <p class="tta-hint">{{privacyHint}}</p>
-
-  <div class="tta-field-row tta-field-stack">
-    <span class="tta-label">{{localize "TTA.Notes.ContentField"}}</span>
-    <div data-editor-host class="tta-editor-host"></div>
-  </div>
 </div>
 
 <footer class="tta-form-footer">
   <button type="submit" class="tta-primary">
-    <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
     {{#if note}}{{localize "TTA.Common.SaveChanges"}}{{else}}{{localize "TTA.Notes.Create"}}{{/if}}
   </button>
 </footer>

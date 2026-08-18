@@ -1,19 +1,284 @@
-/* Through the Ages
- * All rules are scoped under .tta so the module never restyles core Foundry UI.
- * Colours are derived from Foundry's own theme variables where they exist, with
- * explicit fallbacks so the windows stay legible in both light and dark themes.
+/* Through the Ages — Nocturne
+ *
+ * Every rule is scoped under `.tta` so the module never restyles core Foundry
+ * UI. The palette, spacing, radii and shadows below are the Nocturne design
+ * system's tokens, reproduced here as CSS variables; the module's windows are
+ * painted from them rather than from Foundry's theme, so they read the same in
+ * both Foundry themes.
+ *
+ * Two conventions carry through the whole sheet:
+ *   - buttons are outlined, never filled: the accent is a border and a text
+ *     colour, and a fill only appears as a translucent tint on hover/active;
+ *   - `--tta-tint` is the *local* colour of a thing (an Age, a moon, an event).
+ *     `--tta-accent` is the system accent and is never overridden inline.
  */
 
 .tta {
-  --tta-accent: #8f3d2e;
-  --tta-surface: var(--color-bg-option, rgba(0, 0, 0, 0.05));
-  --tta-surface-raised: var(--color-cool-5-25, rgba(255, 255, 255, 0.06));
-  --tta-border: var(--color-border-light-tertiary, rgba(120, 120, 120, 0.45));
-  --tta-text: var(--color-text-primary, inherit);
-  --tta-muted: var(--color-text-subtle, rgba(128, 128, 128, 0.95));
-  --tta-danger: #a3352b;
-  --tta-radius: 6px;
-  --tta-gap: 0.5rem;
+  /* Grounds and text */
+  --tta-bg: #161826;
+  --tta-surface: #232532;
+  --tta-text: #e9e9ed;
+  --tta-divider: color-mix(in srgb, #e9e9ed 16%, transparent);
+
+  /* Accent ramp */
+  --tta-accent: #9184d9;
+  --tta-accent-100: #f5f4ff;
+  --tta-accent-200: #e7e5fe;
+  --tta-accent-300: #d2cefd;
+  --tta-accent-400: #b5abfc;
+  --tta-accent-500: #968ae0;
+  --tta-accent-600: #796cbf;
+  --tta-accent-700: #5d5294;
+  --tta-accent-800: #423a6a;
+  --tta-accent-900: #2b2741;
+
+  /* Neutral ramp */
+  --tta-neutral-100: #f3f5fe;
+  --tta-neutral-200: #e4e7f5;
+  --tta-neutral-300: #cfd3e5;
+  --tta-neutral-400: #b2b6ca;
+  --tta-neutral-500: #9397ab;
+  --tta-neutral-600: #75798c;
+  --tta-neutral-700: #595d6c;
+  --tta-neutral-800: #3f424d;
+  --tta-neutral-900: #292b31;
+
+  /* The saturated indigo of the current Age band */
+  --tta-section: #262a60;
+  --tta-section-glow: #353b80;
+
+  /* Warning amber, and the module's own default colours */
+  --tta-warning: #c98a3d;
+  --tta-warning-text: #e0b070;
+  --tta-danger: #c9603d;
+  --tta-tint: #8f3d2e;
+  --tta-moon-color: #c9d4e8;
+
+  --tta-space-1: 2.8px;
+  --tta-space-2: 5.6px;
+  --tta-space-3: 8.4px;
+  --tta-space-4: 11.2px;
+  --tta-space-6: 16.8px;
+  --tta-space-8: 22.4px;
+
+  --tta-radius-sm: 4px;
+  --tta-radius-md: 8px;
+  --tta-radius-lg: 14px;
+
+  --tta-shadow-sm: 0 0 0 1px var(--tta-neutral-800);
+  --tta-shadow-md: 0 0 0 1px var(--tta-neutral-700), 0 6px 18px rgba(0, 0, 0, 0.55);
+  --tta-shadow-lg: 0 0 0 1px var(--tta-neutral-500), 0 16px 40px rgba(0, 0, 0, 0.65);
+
+  /* Inter is the system's face. No font is fetched from a third party, so the
+     stack falls back to Foundry's own where Inter is not installed. */
+  --tta-font: "Inter", var(--font-primary, "Signika"), system-ui, sans-serif;
+  --tta-font-heading: var(--tta-font);
+}
+
+/* ---------- Window ground ------------------------------------------------ */
+
+.tta,
+.tta .window-content {
+  font-family: var(--tta-font);
+  color: var(--tta-text);
+}
+
+.tta .window-content {
+  background: var(--tta-bg);
+  font-size: 15px;
+  line-height: 1.55;
+  padding: 0;
+}
+
+.tta h2, .tta h3, .tta h4, .tta h5 {
+  font-family: var(--tta-font-heading);
+  font-weight: 500;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  border: none;
+  margin: 0;
+  color: var(--tta-text);
+}
+
+.tta h4 { font-size: 20px; }
+.tta h5 { font-size: 16px; }
+
+.tta :focus-visible {
+  outline: 2px solid var(--tta-accent);
+  outline-offset: 2px;
+}
+
+/* Dates, counts and keys are always tabular so columns of them line up. */
+.tta .tta-num,
+.tta .tta-key,
+.tta .tta-day-number,
+.tta .tta-current-time,
+.tta .tta-year-gutter,
+.tta .tta-tick-label,
+.tta .tta-name-index { font-variant-numeric: tabular-nums; }
+
+/* A freestanding rule fades to transparent at both ends — a Nocturne
+   signature. Box outlines and short accent marks stay solid. */
+.tta .tta-rule {
+  height: 1px;
+  border: 0;
+  margin: var(--tta-space-4) 0;
+  background: linear-gradient(to right,
+    transparent, var(--tta-divider) 48px,
+    var(--tta-divider) calc(100% - 48px), transparent);
+}
+
+/* ---------- Buttons ------------------------------------------------------ */
+
+.tta button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: auto;
+  cursor: pointer;
+  font-family: var(--tta-font-heading);
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1.2;
+  color: var(--tta-text);
+  background: transparent;
+  border: 1px solid var(--tta-divider);
+  border-radius: var(--tta-radius-md);
+  padding: var(--tta-space-2) var(--tta-space-4);
+  transition: background-color 130ms ease-out, border-color 130ms ease-out;
+}
+
+.tta button:hover { background: color-mix(in srgb, var(--tta-text) 7%, transparent); }
+.tta button:active { background: color-mix(in srgb, var(--tta-text) 14%, transparent); }
+.tta button:disabled { opacity: 0.45; cursor: not-allowed; background: transparent; }
+
+.tta button.tta-primary,
+.tta button[type="submit"] {
+  color: var(--tta-accent);
+  border-color: var(--tta-accent);
+}
+
+.tta button.tta-primary:hover,
+.tta button[type="submit"]:hover { background: color-mix(in srgb, var(--tta-accent) 12%, transparent); }
+.tta button.tta-primary:active,
+.tta button[type="submit"]:active { background: color-mix(in srgb, var(--tta-accent) 22%, transparent); }
+
+.tta button.tta-ghost {
+  color: var(--tta-accent);
+  border-color: transparent;
+  padding-inline: var(--tta-space-2);
+}
+
+.tta button.tta-ghost:hover { background: color-mix(in srgb, var(--tta-accent) 10%, transparent); }
+.tta button.tta-ghost:active { background: color-mix(in srgb, var(--tta-accent) 18%, transparent); }
+
+.tta button.tta-danger { color: var(--tta-danger); }
+.tta button.tta-danger:hover { background: color-mix(in srgb, var(--tta-danger) 14%, transparent); }
+
+.tta button.tta-step {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  flex: none;
+}
+
+.tta button.tta-compact { padding: 3px var(--tta-space-3); font-size: 12px; min-height: 30px; }
+.tta button.tta-icon-only {
+  padding: 2px 6px;
+  font-size: 12px;
+  border-color: transparent;
+  color: var(--tta-accent);
+}
+.tta button.tta-icon-only:hover { background: color-mix(in srgb, var(--tta-accent) 10%, transparent); }
+
+/* ---------- Inputs ------------------------------------------------------- */
+
+.tta input[type="text"],
+.tta input[type="number"],
+.tta input[type="color"],
+.tta select,
+.tta textarea {
+  min-height: 32px;
+  padding: 5px 9px;
+  font-family: var(--tta-font);
+  font-size: 13px;
+  color: var(--tta-text);
+  caret-color: var(--tta-accent);
+  background: var(--tta-surface);
+  border: 1px solid var(--tta-divider);
+  border-radius: var(--tta-radius-md);
+}
+
+.tta input:hover,
+.tta select:hover,
+.tta textarea:hover { border-color: color-mix(in srgb, var(--tta-text) 45%, transparent); }
+
+.tta input:focus-visible,
+.tta select:focus-visible,
+.tta textarea:focus-visible { border-color: var(--tta-accent); outline-offset: 0; }
+
+.tta textarea { min-height: 72px; resize: vertical; line-height: 1.5; }
+.tta input[type="color"] { width: 44px; padding: 2px; min-height: 30px; }
+.tta select.tta-compact,
+.tta input.tta-compact { min-height: 30px; font-size: 12px; }
+
+/* ---------- Kickers, tags and keys --------------------------------------- */
+
+.tta .tta-kicker {
+  display: block;
+  font-family: var(--tta-font-heading);
+  font-weight: 600;
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tta-accent);
+}
+
+.tta .tta-kicker-muted { color: color-mix(in srgb, var(--tta-text) 40%, transparent); }
+
+.tta .tta-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  padding: 2px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  background: var(--tta-neutral-800);
+  color: var(--tta-neutral-100);
+}
+
+.tta .tta-tag-accent { background: var(--tta-accent-800); color: var(--tta-accent-100); }
+.tta .tta-tag-outline {
+  background: transparent;
+  border: 1px solid var(--tta-accent);
+  color: var(--tta-accent);
+  font-size: 9px;
+}
+
+.tta .tta-key {
+  font-size: 10px;
+  color: var(--tta-accent-300);
+  letter-spacing: 0.02em;
+}
+
+.tta .tta-meta {
+  font-size: 10px;
+  color: color-mix(in srgb, var(--tta-text) 38%, transparent);
+}
+
+.tta .tta-muted,
+.tta .tta-hint { color: color-mix(in srgb, var(--tta-text) 55%, transparent); font-size: 11px; }
+.tta .tta-hint { margin: 0 0 var(--tta-space-2); line-height: 1.45; text-wrap: pretty; }
+
+.tta .tta-empty {
+  font-size: 12px;
+  padding: 7px 0;
+  margin: 0;
+  color: color-mix(in srgb, var(--tta-text) 36%, transparent);
 }
 
 /* ---------- Layout ------------------------------------------------------- */
@@ -21,605 +286,881 @@
 .tta .tta-layout {
   display: flex;
   flex-direction: column;
-  gap: var(--tta-gap);
   height: 100%;
   min-height: 0;
-  color: var(--tta-text);
+  gap: 0;
+  animation: tta-in 160ms ease-out;
+}
+
+@keyframes tta-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
 }
 
 .tta .tta-main {
-  display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);
-  gap: 0.75rem;
+  display: flex;
+  align-items: stretch;
   flex: 1;
   min-height: 0;
 }
 
-@media (max-width: 860px) {
-  .tta .tta-main { grid-template-columns: minmax(0, 1fr); }
-}
-
-.tta .tta-grid-panel,
-.tta .tta-detail {
+.tta .tta-grid-panel {
+  flex: 1 1 560px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  gap: var(--tta-gap);
+  padding: 12px 13px 14px;
 }
 
-.tta .tta-grid-wrap,
-.tta .tta-detail,
-.tta .tta-timeline-body,
-.tta .tta-config-body {
+.tta .tta-detail {
+  flex: 1 1 340px;
+  min-width: 280px;
+  padding: 12px 13px 14px;
+  background: color-mix(in srgb, var(--tta-bg) 60%, transparent);
+  box-shadow: inset 1px 0 0 var(--tta-divider);
   overflow-y: auto;
-  min-height: 0;
+}
+
+.tta .tta-grid-wrap { min-height: 0; overflow-y: auto; }
+
+@media (max-width: 860px) {
+  .tta .tta-main { flex-direction: column; }
+  .tta .tta-detail { box-shadow: inset 0 1px 0 var(--tta-divider); }
 }
 
 .tta .tta-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-top: 1px solid var(--tta-border);
-  padding-top: 0.35rem;
-  font-size: 0.8rem;
+  gap: var(--tta-space-3);
+  padding: 8px 13px;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--tta-text) 40%, transparent);
+  box-shadow: inset 0 1px 0 var(--tta-divider);
 }
 
-/* ---------- Header ------------------------------------------------------- */
+/* ---------- First-time setup --------------------------------------------- */
+
+.tta .tta-setup {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  padding: 26px 22px 28px;
+}
+
+.tta .tta-setup p {
+  margin: 0;
+  max-width: 52ch;
+  font-size: 13px;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--tta-text) 60%, transparent);
+  text-wrap: pretty;
+}
+
+.tta .tta-setup .tta-accented { color: var(--tta-accent-300); }
+.tta .tta-setup button { margin-top: 4px; }
+
+/* ---------- Banners ------------------------------------------------------ */
+
+/* The drift strip spans the window edge to edge, above the header row. */
+.tta .tta-strip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: color-mix(in srgb, var(--tta-text) 78%, transparent);
+  background: color-mix(in srgb, var(--tta-warning) 14%, transparent);
+  box-shadow: inset 0 -1px 0 var(--tta-divider);
+}
+
+.tta .tta-strip::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--tta-warning);
+}
+
+.tta .tta-strip button { margin-left: auto; white-space: nowrap; font-size: 12px; }
+
+.tta .tta-panel {
+  padding: 9px 10px;
+  border-radius: var(--tta-radius-sm);
+  background: color-mix(in srgb, var(--tta-accent) 10%, transparent);
+}
+
+.tta .tta-panel-warning { background: color-mix(in srgb, var(--tta-warning) 11%, transparent); }
+.tta .tta-panel-warning .tta-kicker { color: var(--tta-warning-text); }
+.tta .tta-panel-error { background: color-mix(in srgb, var(--tta-danger) 13%, transparent); }
+.tta .tta-panel-error .tta-kicker { color: var(--tta-danger); }
+.tta .tta-panel-quiet { background: color-mix(in srgb, var(--tta-text) 5%, transparent); }
+
+.tta .tta-panel .tta-kicker { margin-bottom: 5px; font-size: 9px; letter-spacing: 0.12em; }
+.tta .tta-panel ul { margin: 0; padding: 0; list-style: none; }
+.tta .tta-panel li,
+.tta .tta-panel p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--tta-text) 70%, transparent);
+}
+
+.tta .tta-panel-head { display: flex; align-items: center; gap: 9px; }
+.tta .tta-panel-head > div { flex: 1; }
+.tta .tta-panel-head button { white-space: nowrap; }
+
+.tta .tta-note-warning {
+  margin-top: 12px;
+  padding: 8px 10px;
+  border-radius: var(--tta-radius-sm);
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--tta-warning-text);
+  background: color-mix(in srgb, var(--tta-warning) 12%, transparent);
+}
+
+.tta .tta-note-disabled {
+  margin-top: 12px;
+  padding: 8px 10px;
+  border-radius: var(--tta-radius-sm);
+  font-size: 11px;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--tta-text) 55%, transparent);
+  background: color-mix(in srgb, var(--tta-text) 5%, transparent);
+}
+
+/* ---------- Calendar header row ------------------------------------------ */
 
 .tta .tta-header {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--tta-border);
+  gap: 8px;
+  padding: 9px 12px;
+  box-shadow: inset 0 -1px 0 var(--tta-divider);
 }
 
-.tta .tta-eyebrow {
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.7rem;
-  color: var(--tta-muted);
-}
+.tta .tta-header-date { display: flex; align-items: baseline; gap: 8px; }
 
 .tta .tta-current-date {
-  margin: 0.1rem 0;
-  font-size: 1.35rem;
-  border: none;
+  font-family: var(--tta-font-heading);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--tta-accent-200);
 }
 
 .tta .tta-current-time {
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
+  font-family: var(--tta-font-heading);
+  font-weight: 500;
+  font-size: 13px;
+  color: color-mix(in srgb, var(--tta-text) 62%, transparent);
 }
 
-.tta .tta-current-age {
-  margin: 0;
+.tta .tta-moon-strip {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  border-left: 4px solid var(--tta-accent);
-  padding-left: 0.5rem;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.tta .tta-range { color: var(--tta-muted); font-size: 0.85rem; }
+.tta .tta-moon-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--tta-text) 52%, transparent);
+}
 
 .tta .tta-header-actions {
+  margin-left: auto;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.35rem;
-}
-
-.tta .tta-time-controls,
-.tta .tta-header-links {
-  display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 0.25rem;
+  gap: 6px;
 }
 
-.tta .tta-time-controls select { max-width: 14rem; }
-
-.tta .tta-time-warning {
-  margin: 0;
-  color: var(--tta-warning, #9a5d00);
-  font-size: 0.8rem;
-}
-
-.tta .tta-time-inputs {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.tta .tta-time-inputs input { width: 4rem; }
-
-/* ---------- Navigation --------------------------------------------------- */
-
-.tta .tta-nav {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.tta .tta-view-label {
-  flex: 1;
-  text-align: center;
-  margin: 0;
-  border: none;
-  font-size: 1.05rem;
-  display: flex;
-  flex-direction: column;
-}
-
-.tta .tta-view-age {
-  font-size: 0.75rem;
-  color: var(--tta-accent);
-  font-weight: 600;
-}
-
-.tta .tta-today.tta-is-current { opacity: 0.55; }
+.tta .tta-header-actions select { width: 150px; }
 
 /* ---------- Month grid --------------------------------------------------- */
 
+.tta .tta-grid-head,
 .tta .tta-grid {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 3px;
-  table-layout: fixed;
+  display: grid;
+  grid-template-columns: repeat(var(--tta-columns, 7), minmax(0, 1fr));
+  gap: 4px;
 }
 
-.tta .tta-grid th {
-  font-size: 0.75rem;
+.tta .tta-grid-head > * {
+  font-family: var(--tta-font-heading);
+  font-weight: 500;
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--tta-muted);
-  padding-bottom: 0.2rem;
+  text-align: center;
+  color: color-mix(in srgb, var(--tta-text) 40%, transparent);
+  padding: 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.tta .tta-grid th abbr { text-decoration: none; border: none; }
+.tta .tta-grid-head abbr { text-decoration: none; border: none; }
 
-.tta .tta-day { padding: 0; }
+/* Each week is a row semantically but lays its cells straight into the grid. */
+.tta .tta-week { display: contents; }
 
-.tta .tta-day-empty {
-  background: transparent;
-  border: 1px dashed var(--tta-border);
-  border-radius: var(--tta-radius);
-  opacity: 0.25;
+.tta .tta-month-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
 }
+
+.tta .tta-month-head .tta-kicker { margin-bottom: 6px; }
+.tta .tta-view-year { color: color-mix(in srgb, var(--tta-text) 40%, transparent); }
+.tta .tta-month-nav { display: flex; gap: 4px; }
+
+.tta .tta-day-empty { height: 52px; }
 
 .tta .tta-day-button {
-  width: 100%;
-  min-height: 3.2rem;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.15rem;
-  padding: 0.3rem;
-  background: var(--tta-surface);
-  border: 1px solid var(--tta-border);
-  border-radius: var(--tta-radius);
-  cursor: pointer;
-  line-height: 1.1;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 100%;
+  height: 52px;
+  padding: 0;
+  border-radius: var(--tta-radius-sm);
+  border: 1px solid transparent;
+  background: color-mix(in srgb, var(--tta-text) 4%, transparent);
 }
 
-.tta .tta-day-button:hover { border-color: var(--tta-accent); }
+.tta .tta-day-button:hover { background: color-mix(in srgb, var(--tta-text) 9%, transparent); }
 
-.tta .tta-day-number { font-weight: 600; }
-
-.tta .tta-day-marks {
-  display: flex;
-  gap: 0.3rem;
-  font-size: 0.7rem;
-  color: var(--tta-muted);
+.tta .tta-day-number {
+  font-family: var(--tta-font-heading);
+  font-weight: 500;
+  font-size: 13px;
+  color: color-mix(in srgb, var(--tta-text) 78%, transparent);
 }
 
-.tta .tta-mark { display: inline-flex; align-items: center; gap: 0.15rem; }
-.tta .tta-mark-count { font-variant-numeric: tabular-nums; }
-
-/* The current day is marked by an outline and a bold underline, not colour
-   alone, so it remains distinguishable without colour perception. */
+/* The current day carries a tint *and* a border; the selected day carries a
+   solid accent border. Neither is signalled by colour alone. */
 .tta .tta-day-current .tta-day-button {
-  outline: 2px solid var(--tta-accent);
-  outline-offset: -2px;
-  font-weight: 700;
+  background: color-mix(in srgb, var(--tta-accent) 16%, transparent);
+  border-color: color-mix(in srgb, var(--tta-accent) 40%, transparent);
 }
 
-.tta .tta-day-selected .tta-day-button {
-  box-shadow: inset 0 -3px 0 0 var(--tta-accent);
+.tta .tta-day-current .tta-day-number { color: var(--tta-accent-200); }
+.tta .tta-day-selected .tta-day-button { border-color: var(--tta-accent); }
+
+.tta .tta-day-marks { display: flex; gap: 3px; height: 5px; align-items: center; }
+.tta .tta-day-moons { display: flex; gap: 2px; height: 6px; align-items: center; }
+
+.tta .tta-dot-note {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--tta-accent-400);
+}
+
+.tta .tta-dot-event {
+  width: 4px;
+  height: 4px;
+  border-radius: 1px;
+  background: var(--tta-warning);
 }
 
 .tta .tta-legend {
   display: flex;
-  gap: 0.9rem;
-  font-size: 0.75rem;
-  color: var(--tta-muted);
+  align-items: center;
+  gap: 12px;
+  margin-top: 11px;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--tta-text) 40%, transparent);
+}
+
+.tta .tta-legend > span { display: flex; align-items: center; gap: 5px; }
+.tta .tta-legend button {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--tta-accent-300);
 }
 
 /* ---------- Detail panel ------------------------------------------------- */
 
-.tta .tta-detail-block {
-  border: 1px solid var(--tta-border);
-  border-radius: var(--tta-radius);
-  padding: 0.5rem 0.6rem;
-  margin-bottom: 0.6rem;
-  background: var(--tta-surface);
-}
-
-.tta .tta-detail-header {
+.tta .tta-filter {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 0.5rem;
+  gap: 7px;
+  margin-bottom: 10px;
+}
+
+.tta .tta-filter select { flex: 1; }
+
+.tta .tta-detail-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   flex-wrap: wrap;
+  margin-bottom: 2px;
 }
 
-.tta .tta-detail-header h3 { margin: 0; border: none; font-size: 1rem; }
-
-.tta .tta-subhead {
-  margin: 0.6rem 0 0.3rem;
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--tta-muted);
-  border: none;
+.tta .tta-detail-head h3 {
+  font-family: var(--tta-font-heading);
+  font-weight: 500;
+  font-size: 13px;
 }
 
-.tta .tta-filter { display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; }
+.tta .tta-detail-head button { margin-left: auto; }
 
-/* ---------- Notes -------------------------------------------------------- */
+.tta .tta-detail-block + .tta-detail-block {
+  margin-top: 14px;
+  padding-top: 10px;
+  box-shadow: inset 0 1px 0 var(--tta-divider);
+}
+
+.tta .tta-moon-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tta .tta-moon-list-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--tta-text) 46%, transparent);
+}
+
+.tta .tta-moon-list-item.tta-moon-full { color: color-mix(in srgb, var(--tta-text) 75%, transparent); }
+
+/* ---------- Note and event rows ------------------------------------------ */
 
 .tta .tta-note-list,
-.tta .tta-event-list,
-.tta .tta-year-list,
-.tta .tta-age-editor,
-.tta .tta-event-chips {
-  list-style: none;
-  margin: 0;
+.tta .tta-day-event-list {
+  display: grid;
+  gap: 1px;
+  margin: 8px 0 0;
   padding: 0;
+  list-style: none;
 }
 
 .tta .tta-note {
-  border: 1px solid var(--tta-border);
-  border-left: 4px solid var(--tta-accent);
-  border-radius: var(--tta-radius);
-  padding: 0.45rem 0.55rem;
-  margin-bottom: 0.45rem;
-  background: var(--tta-surface-raised);
-}
-
-.tta .tta-note-header {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 0.4rem;
-  flex-wrap: wrap;
+  gap: 9px;
+  padding: 7px 0;
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--tta-text) 7%, transparent);
 }
 
-.tta .tta-note-title { margin: 0; font-size: 0.95rem; }
+/* A 2px mark rather than a border: accent for a GM author, neutral for a
+   player, so authorship reads before the tag does. */
+.tta .tta-note::before {
+  content: "";
+  width: 2px;
+  flex: none;
+  border-radius: 2px;
+  background: var(--tta-neutral-600);
+}
+
+.tta .tta-note-gm::before { background: var(--tta-accent); }
+
+.tta .tta-note-body { flex: 1; min-width: 0; }
+
+.tta .tta-note-title {
+  font-size: 13px;
+  line-height: 1.35;
+  font-weight: 400;
+}
 
 .tta .tta-note-meta {
-  margin: 0.1rem 0 0.3rem;
-  font-size: 0.75rem;
-  color: var(--tta-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 3px;
 }
 
 .tta .tta-note-content,
 .tta .tta-event-content {
-  font-size: 0.88rem;
-  max-height: 16rem;
+  margin-top: 5px;
+  font-size: 12px;
+  line-height: 1.5;
+  max-height: 12rem;
   overflow-y: auto;
+  color: color-mix(in srgb, var(--tta-text) 66%, transparent);
 }
 
-.tta .tta-note-actions,
-.tta .tta-event-actions {
+.tta .tta-note-content p,
+.tta .tta-event-content p { margin: 0 0 var(--tta-space-2); }
+
+.tta .tta-note-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  margin-top: 0.35rem;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-end;
 }
 
-.tta .tta-note-actions button,
-.tta .tta-event-actions button { font-size: 0.75rem; padding: 0.1rem 0.4rem; }
+.tta .tta-note-actions .tta-row { display: flex; gap: 1px; }
 
-/* ---------- Badges ------------------------------------------------------- */
-
-.tta .tta-badge {
-  display: inline-flex;
+.tta .tta-day-event {
+  display: flex;
   align-items: center;
-  gap: 0.2rem;
-  font-size: 0.7rem;
-  padding: 0.05rem 0.35rem;
-  border: 1px solid var(--tta-border);
-  border-radius: 999px;
-  white-space: nowrap;
+  gap: 8px;
+  padding: 7px 0;
+  font-size: 13px;
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--tta-text) 7%, transparent);
 }
 
-.tta .tta-badge-players { border-style: solid; }
-.tta .tta-badge-gm-only,
-.tta .tta-badge-author-and-gm { border-style: dashed; }
-.tta .tta-badge-current { border-color: var(--tta-accent); font-weight: 600; }
+.tta .tta-event-dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 2px;
+  background: var(--tta-tint);
+}
+
+.tta .tta-day-event .tta-event-title { flex: 1; }
 
 /* ---------- Timeline ----------------------------------------------------- */
 
 .tta .tta-timeline-toolbar {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
   align-items: center;
-  gap: 0.5rem;
-  padding-bottom: 0.4rem;
-  border-bottom: 1px solid var(--tta-border);
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 8px 12px;
+  box-shadow: inset 0 -1px 0 var(--tta-divider);
 }
 
-.tta .tta-mode-switch { display: flex; gap: 0.2rem; }
+.tta .tta-timeline-toolbar select { width: 170px; margin-left: auto; }
 
-.tta .tta-mode-active {
-  border-color: var(--tta-accent);
-  font-weight: 700;
-  text-decoration: underline;
+.tta .tta-timeline-scope {
+  font-family: var(--tta-font-heading);
+  font-weight: 500;
+  font-size: 13px;
+  margin-left: 4px;
 }
 
-.tta .tta-timeline-nav,
-.tta .tta-timeline-tools {
+.tta .tta-mode-bar {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 9px;
+  padding: 8px 12px;
+  box-shadow: inset 0 -1px 0 var(--tta-divider);
 }
 
-.tta .tta-timeline-position { min-width: 8rem; text-align: center; font-weight: 600; }
-
-.tta .tta-timeline-context { margin: 0.2rem 0; font-size: 0.85rem; }
-
-.tta .tta-age-header {
-  border: 1px solid var(--tta-border);
-  border-left: 5px solid var(--tta-accent);
-  border-radius: var(--tta-radius);
-  padding: 0.5rem 0.65rem;
-  margin-bottom: 0.6rem;
-  background: var(--tta-surface);
+.tta .tta-pill-group {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--tta-radius-sm);
+  background: color-mix(in srgb, var(--tta-text) 6%, transparent);
 }
 
-.tta .tta-age-name { margin: 0.1rem 0; border: none; }
-.tta .tta-age-range { margin: 0; font-size: 0.85rem; }
-.tta .tta-age-description { margin: 0.35rem 0 0; font-size: 0.88rem; }
-
-.tta .tta-year {
-  border-left: 2px solid var(--tta-border);
-  padding: 0 0 0.5rem 0.7rem;
-  margin-left: 0.4rem;
-  position: relative;
+.tta .tta-pill {
+  font-size: 11px;
+  font-weight: 400;
+  padding: 3px 9px;
+  min-height: 0;
+  border: 0;
+  border-radius: 3px;
+  white-space: nowrap;
+  background: transparent;
+  color: color-mix(in srgb, var(--tta-text) 55%, transparent);
 }
 
-.tta .tta-year::before {
+.tta .tta-pill:hover { background: color-mix(in srgb, var(--tta-text) 8%, transparent); }
+
+.tta .tta-pill-active,
+.tta .tta-pill-active:hover {
+  color: var(--tta-accent);
+  background: color-mix(in srgb, var(--tta-accent) 14%, transparent);
+}
+
+.tta .tta-timeline-body { padding: 16px 14px 14px; overflow-y: auto; min-height: 0; flex: 1; }
+
+/* Age bands are proportional to their duration, floored so a short Age stays
+   readable, and the current one takes the indigo section ground. */
+.tta .tta-bands {
+  display: flex;
+  gap: 4px;
+  align-items: stretch;
+  height: 72px;
+  margin: 0 0 2px;
+  padding: 0;
+  list-style: none;
+}
+
+.tta .tta-band {
+  flex: var(--tta-band-flex, 1);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  gap: 3px;
+  padding: 9px;
+  overflow: hidden;
+  text-align: left;
+  border-radius: var(--tta-radius-md);
+  border: 1px solid transparent;
+  background: color-mix(in srgb, var(--tta-text) 5%, transparent);
+  box-shadow: inset 3px 0 0 var(--tta-tint);
+}
+
+.tta .tta-band-active {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--tta-section-glow) 55%, transparent),
+    color-mix(in srgb, var(--tta-section) 85%, transparent));
+  border-color: color-mix(in srgb, var(--tta-accent) 55%, transparent);
+}
+
+.tta .tta-band .tta-kicker {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: color-mix(in srgb, var(--tta-text) 33%, transparent);
+}
+
+.tta .tta-band-active .tta-kicker { color: var(--tta-accent-300); }
+.tta .tta-band-name { font-family: var(--tta-font-heading); font-weight: 500; font-size: 14px; }
+.tta .tta-band-sub { font-size: 10px; opacity: 0.55; }
+
+/* The spine: one rule fading out over its last 40px at each end, with ticks
+   positioned by percentage along it. */
+.tta .tta-spine { position: relative; height: 44px; margin-top: 2px; }
+
+.tta .tta-spine::before {
   content: "";
   position: absolute;
-  left: -5px;
-  top: 0.45rem;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--tta-border);
+  left: 0;
+  right: 0;
+  top: 14px;
+  height: 1px;
+  background: linear-gradient(to right,
+    transparent, var(--tta-divider) 40px,
+    var(--tta-divider) calc(100% - 40px), transparent);
 }
 
-.tta .tta-year-current { border-left-color: var(--tta-accent); }
-.tta .tta-year-current::before { background: var(--tta-accent); }
-
-.tta .tta-year-label {
-  margin: 0 0 0.3rem;
-  border: none;
-  font-size: 0.95rem;
+.tta .tta-tick {
+  position: absolute;
+  left: var(--tta-tick-pos, 0%);
+  top: 0;
+  transform: translateX(-50%);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
+  gap: 4px;
+}
+
+.tta .tta-tick-mark {
+  width: 1px;
+  height: 11px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--tta-text) 20%, transparent);
+}
+
+.tta .tta-tick-event .tta-tick-mark { height: 19px; background: var(--tta-accent-600); }
+.tta .tta-tick-current .tta-tick-mark { width: 2px; height: 26px; background: var(--tta-accent); }
+
+.tta .tta-tick-label {
+  font-family: var(--tta-font-heading);
+  font-weight: 400;
+  font-size: 10px;
+  color: color-mix(in srgb, var(--tta-text) 36%, transparent);
+}
+
+.tta .tta-tick-current .tta-tick-label { font-weight: 500; font-size: 11px; color: var(--tta-accent-200); }
+
+.tta .tta-events-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 6px 0 8px;
+}
+
+.tta .tta-year-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.tta .tta-year { display: flex; gap: 12px; }
+
+.tta .tta-year-gutter {
+  width: 64px;
+  flex: none;
+  text-align: right;
+  padding-top: 2px;
+  font-family: var(--tta-font-heading);
+  font-weight: 500;
+  font-size: 13px;
+  color: color-mix(in srgb, var(--tta-text) 45%, transparent);
+}
+
+.tta .tta-year-current .tta-year-gutter { font-size: 14px; color: var(--tta-accent-200); }
+
+.tta .tta-year-events {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0 0 0 12px;
+  list-style: none;
+  box-shadow: inset 1px 0 0 var(--tta-divider);
 }
 
 .tta .tta-timeline-event {
   display: flex;
-  gap: 0.5rem;
-  border: 1px solid var(--tta-border);
-  border-left: 4px solid var(--tta-accent);
-  border-radius: var(--tta-radius);
-  padding: 0.4rem 0.55rem;
-  margin-bottom: 0.4rem;
-  background: var(--tta-surface-raised);
+  align-items: flex-start;
+  gap: 9px;
+  padding: 8px 10px;
+  border-radius: var(--tta-radius-sm);
+  background: color-mix(in srgb, var(--tta-text) 4%, transparent);
 }
 
-.tta .tta-event-icon { color: var(--tta-accent); padding-top: 0.15rem; }
+.tta .tta-timeline-event .tta-event-dot { width: 8px; height: 8px; margin-top: 4px; }
 .tta .tta-event-body { flex: 1; min-width: 0; }
+.tta .tta-event-title { font-size: 13px; line-height: 1.35; font-weight: 400; }
 
-.tta .tta-event-header {
+.tta .tta-event-meta {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-}
-
-.tta .tta-event-title { margin: 0; font-size: 0.95rem; }
-.tta .tta-event-date { font-size: 0.78rem; color: var(--tta-muted); }
-.tta .tta-event-badges { margin: 0.15rem 0; display: flex; gap: 0.3rem; flex-wrap: wrap; }
-
-.tta .tta-event-chip {
-  display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  border: 1px solid var(--tta-accent);
-  border-radius: 999px;
-  padding: 0.05rem 0.45rem;
-  margin: 0 0.25rem 0.25rem 0;
-  font-size: 0.75rem;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 3px;
 }
 
-.tta .tta-event-chips { display: flex; flex-wrap: wrap; }
+.tta .tta-event-actions { display: flex; gap: 1px; }
+
 
 /* ---------- Forms and configuration -------------------------------------- */
 
 .tta .tta-form-body,
 .tta .tta-config-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-  padding: 0.25rem;
+  display: grid;
+  gap: var(--tta-space-4);
+  padding: 13px;
+  overflow-y: auto;
+  min-height: 0;
 }
 
-.tta .tta-fieldset {
-  border: 1px solid var(--tta-border);
-  border-radius: var(--tta-radius);
-  padding: 0.5rem 0.65rem;
-}
+.tta .tta-config-body { gap: var(--tta-space-6); padding: 14px; }
 
-.tta .tta-fieldset legend {
-  font-weight: 600;
-  padding: 0 0.35rem;
-}
-
-.tta .tta-field-row {
+.tta .tta-breadcrumb {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.35rem;
-}
-
-.tta .tta-field-row > label { flex: 0 0 12rem; }
-.tta .tta-field-stack { flex-direction: column; align-items: stretch; }
-.tta .tta-field-stack > label,
-.tta .tta-field-stack > .tta-label { flex: none; font-weight: 600; }
-
-.tta .tta-field-inline {
-  display: flex;
+  gap: 8px;
   flex-wrap: wrap;
-  gap: 0.6rem;
-  align-items: flex-end;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--tta-text) 45%, transparent);
 }
 
-.tta .tta-field-inline label { display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.85rem; }
+.tta .tta-breadcrumb strong { font-weight: 400; color: var(--tta-accent-300); }
 
-.tta .tta-name-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 0.35rem;
+.tta .tta-section { display: grid; gap: 7px; }
+
+.tta .tta-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.tta .tta-name-field { display: flex; align-items: center; gap: 0.35rem; }
+.tta .tta-section-head button { margin-left: auto; }
+
+.tta .tta-field > label,
+.tta .tta-field > span {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 5px;
+  color: color-mix(in srgb, var(--tta-text) 70%, transparent);
+}
+
+.tta .tta-field input,
+.tta .tta-field select,
+.tta .tta-field textarea { width: 100%; }
+
+.tta .tta-field-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.tta .tta-field-grid-date { grid-template-columns: 1fr 1.4fr 1fr; }
+
+.tta .tta-name-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.tta .tta-name-field { display: flex; align-items: center; gap: 6px; }
+.tta .tta-name-field input { flex: 1; min-height: 30px; }
 
 .tta .tta-name-index {
-  flex: 0 0 1.6rem;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-  color: var(--tta-muted);
-  font-size: 0.8rem;
+  width: 16px;
+  flex: none;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--tta-text) 36%, transparent);
 }
 
-.tta .tta-age-row {
-  border: 1px solid var(--tta-border);
-  border-left: 4px solid var(--tta-accent);
-  border-radius: var(--tta-radius);
-  padding: 0.5rem;
-  margin-bottom: 0.5rem;
-}
+.tta .tta-weekday-grid { display: flex; flex-wrap: wrap; gap: 5px; }
+.tta .tta-weekday-grid input { width: 112px; min-height: 30px; }
 
-.tta .tta-age-main {
+.tta .tta-checkbox,
+.tta .tta-inline-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: flex-end;
-}
-
-.tta .tta-age-main label { display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.8rem; }
-.tta .tta-age-main .tta-grow { flex: 1 1 12rem; }
-.tta .tta-age-endyear { margin: 0; font-size: 0.8rem; display: flex; flex-direction: column; }
-.tta .tta-age-description { display: flex; flex-direction: column; gap: 0.15rem; margin-top: 0.4rem; font-size: 0.8rem; }
-
-.tta .tta-age-footer {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.4rem;
+  gap: 8px;
+  font-size: 12px;
   flex-wrap: wrap;
 }
 
-.tta .tta-age-controls { display: flex; gap: 0.25rem; }
-.tta .tta-checkbox { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.85rem; }
-.tta .tta-color input[type="color"] { width: 3rem; height: 1.7rem; padding: 0; }
+.tta .tta-checkbox input { accent-color: var(--tta-accent); }
+
+/* Age and moon editor rows keep a table's rhythm but are free to wrap. */
+.tta .tta-row-editor { display: grid; gap: var(--tta-space-2); margin: 0; padding: 0; list-style: none; }
+
+.tta .tta-editor-row {
+  display: grid;
+  gap: var(--tta-space-2);
+  padding: var(--tta-space-3);
+  border-radius: var(--tta-radius-sm);
+  background: color-mix(in srgb, var(--tta-text) 4%, transparent);
+  box-shadow: inset 3px 0 0 var(--tta-tint);
+}
+
+.tta .tta-editor-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--tta-space-2);
+}
+
+.tta .tta-editor-main label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--tta-text) 70%, transparent);
+}
+
+.tta .tta-editor-main label input[type="number"] { width: 5.5rem; }
+.tta .tta-editor-main .tta-grow { flex: 1 1 12rem; }
+.tta .tta-editor-main .tta-grow input { width: 100%; }
+
+.tta .tta-editor-derived {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--tta-text) 50%, transparent);
+}
+
+.tta .tta-editor-derived strong { font-weight: 500; color: color-mix(in srgb, var(--tta-text) 80%, transparent); }
+
+.tta .tta-editor-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--tta-space-3);
+}
+
+.tta .tta-editor-controls { margin-left: auto; display: flex; gap: 2px; }
+
+.tta .tta-editor-description {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--tta-text) 70%, transparent);
+}
 
 .tta .tta-form-footer {
   display: flex;
-  justify-content: flex-end;
-  gap: 0.4rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--tta-border);
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 13px;
+  box-shadow: inset 0 1px 0 var(--tta-divider);
 }
 
-.tta .tta-editor-host { border: 1px solid var(--tta-border); border-radius: var(--tta-radius); }
-.tta .tta-richtext-fallback { width: 100%; font-family: inherit; }
+.tta .tta-form-footer button[type="submit"],
+.tta .tta-form-footer .tta-primary { margin-left: auto; }
 
-/* ---------- Banners, hints and utilities --------------------------------- */
+.tta .tta-form-part,
+.tta .tta-config-part {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  animation: tta-in 160ms ease-out;
+}
 
-.tta .tta-banner {
-  border: 1px solid var(--tta-border);
-  border-left: 4px solid var(--tta-accent);
-  border-radius: var(--tta-radius);
-  padding: 0.4rem 0.6rem;
+.tta .tta-form-context {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--tta-text) 62%, transparent);
 }
 
-.tta .tta-banner h4 { margin: 0 0 0.2rem; border: none; font-size: 0.9rem; }
-.tta .tta-banner ul { margin: 0.2rem 0 0 1rem; }
-.tta .tta-banner-error { border-left-color: var(--tta-danger); }
-.tta .tta-banner-warning { border-left-color: #b8860b; }
-.tta .tta-banner-info { border-left-color: #37618e; }
-
-.tta .tta-hint,
-.tta .tta-muted { color: var(--tta-muted); font-size: 0.8rem; }
-.tta .tta-hint { margin: 0 0 0.4rem; }
-
-.tta .tta-empty {
-  color: var(--tta-muted);
-  font-style: italic;
-  font-size: 0.85rem;
-  margin: 0.25rem 0;
-}
-
-.tta .tta-empty-inline { margin: 0 0 0.3rem; }
-
-.tta .tta-key {
-  font-family: var(--font-mono, monospace);
-  font-size: 0.75rem;
-  color: var(--tta-muted);
-  border: 1px solid var(--tta-border);
-  border-radius: 3px;
-  padding: 0 0.25rem;
-}
-
-.tta .tta-source-excerpt {
-  margin: 0.35rem 0 0;
-  padding-left: 0.6rem;
-  border-left: 3px solid var(--tta-border);
-  font-size: 0.82rem;
-  color: var(--tta-muted);
-}
-
-.tta .tta-danger { color: var(--tta-danger); }
-.tta .tta-version { font-family: var(--font-mono, monospace); color: var(--tta-muted); }
-
-.tta .tta-sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
+.tta .tta-editor-host {
+  border: 1px solid var(--tta-divider);
+  border-radius: var(--tta-radius-md);
+  background: var(--tta-surface);
   overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
 }
 
-/* --- Moons ---------------------------------------------------------------
+.tta .tta-richtext-fallback { width: 100%; font-family: inherit; border: 0; background: transparent; }
+
+/* Colour swatches and the icon picker: 26px cells, the chosen one outlined. */
+.tta .tta-swatches { display: flex; gap: 4px; align-items: center; min-height: 32px; }
+
+.tta .tta-swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  flex: none;
+  border-radius: var(--tta-radius-sm);
+  border: 1px solid color-mix(in srgb, var(--tta-text) 22%, transparent);
+  background: var(--tta-tint);
+}
+
+.tta .tta-swatch:hover { border-color: var(--tta-text); background: var(--tta-tint); }
+
+.tta .tta-icon-picker { display: flex; flex-wrap: wrap; gap: 3px; min-height: 32px; }
+
+.tta .tta-icon-cell {
+  position: relative;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--tta-radius-sm);
+  border: 1px solid transparent;
+  background: color-mix(in srgb, var(--tta-text) 6%, transparent);
+  cursor: pointer;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--tta-text) 62%, transparent);
+}
+
+.tta .tta-icon-cell input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.tta .tta-icon-cell:hover { background: color-mix(in srgb, var(--tta-text) 12%, transparent); }
+.tta .tta-icon-cell:has(input:checked) { border-color: var(--tta-accent); color: var(--tta-accent); }
+.tta .tta-icon-cell:has(input:focus-visible) { outline: 2px solid var(--tta-accent); outline-offset: 2px; }
+
+/* ---------- Moon phase discs --------------------------------------------- *
  * A phase disc is an unlit circle, half of it painted with the moon's colour,
  * plus an elliptical terminator. `--tta-terminator` is the shadow's relative
  * width (1 at new and full, 0 at the quarters) and `.tta-gibbous` flips that
@@ -629,12 +1170,12 @@
   position: relative;
   display: inline-block;
   flex: 0 0 auto;
-  width: var(--tta-moon-size, 1rem);
-  height: var(--tta-moon-size, 1rem);
+  width: var(--tta-moon-size, 9px);
+  height: var(--tta-moon-size, 9px);
   border-radius: 50%;
   overflow: hidden;
-  background: var(--tta-moon-unlit, rgba(20, 22, 28, 0.85));
-  border: 1px solid var(--tta-border);
+  background: var(--tta-moon-unlit, #12141c);
+  border: 1px solid var(--tta-moon-color, #c9d4e8);
   vertical-align: middle;
 }
 
@@ -659,84 +1200,69 @@
   width: calc(var(--tta-terminator, 1) * 100%);
   transform: translateX(-50%);
   border-radius: 50%;
-  background: var(--tta-moon-unlit, rgba(20, 22, 28, 0.85));
+  background: var(--tta-moon-unlit, #12141c);
 }
 
 .tta .tta-moon-disc.tta-gibbous::after { background: var(--tta-moon-color, #c9d4e8); }
 
-.tta .tta-moon-mini { --tta-moon-size: 0.55rem; border-width: 0; }
+.tta .tta-moon-mini { --tta-moon-size: 5px; }
+.tta .tta-moon-preview { --tta-moon-size: 20px; display: flex; align-items: center; padding-bottom: 2px; }
 
-/* Current phases beside the campaign date. */
-.tta .tta-moon-strip {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  margin: 0.35rem 0 0;
+/* ---------- Utilities ---------------------------------------------------- */
+
+.tta .tta-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
   padding: 0;
-  list-style: none;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
-.tta .tta-moon-item {
+.tta .tta-source-excerpt {
+  margin: var(--tta-space-2) 0 0;
+  padding-left: var(--tta-space-3);
+  box-shadow: inset 2px 0 0 var(--tta-divider);
+  font-size: 12px;
+  color: color-mix(in srgb, var(--tta-text) 55%, transparent);
+}
+
+/* ---------- Journal sidebar entry point ----------------------------------- *
+ * The only rule outside `.tta`: the Calendar button the module adds to the
+ * Journal directory. It borrows the accent but otherwise defers to Foundry's
+ * sidebar metrics, so it sits with the directory's own controls rather than
+ * imposing the module's window styling on the sidebar.
+ */
+.tta-sidebar-button {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
-  font-size: 0.85rem;
-  color: var(--tta-muted);
-}
-
-/* Phases for the selected day, in the detail panel. */
-.tta .tta-moon-list { list-style: none; margin: 0 0 0.5rem; padding: 0; }
-
-.tta .tta-moon-list-item {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.2rem 0;
-}
-
-.tta .tta-moon-list-item .tta-moon-name { font-weight: 600; }
-.tta .tta-moon-list-item .tta-moon-phase { color: var(--tta-muted); margin-left: auto; }
-.tta .tta-moon-list-item.tta-moon-full .tta-moon-phase { color: var(--tta-text); font-weight: 600; }
-
-/* Discs inside day cells, below the note and event marks. */
-.tta .tta-day-moons {
-  display: flex;
   justify-content: center;
-  gap: 0.15rem;
-  margin-top: 0.15rem;
+  gap: 6px;
+  width: 100%;
+  margin: 4px 0;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: var(--font-size-13, 13px);
+  color: #9184d9;
+  background: transparent;
+  border: 1px solid #9184d9;
+  border-radius: 4px;
 }
 
-/* Moon rows in the configuration window. */
-.tta .tta-moon-editor { list-style: none; margin: 0 0 var(--tta-gap); padding: 0; display: flex; flex-direction: column; gap: var(--tta-gap); }
-
-.tta .tta-moon-row {
-  border: 1px solid var(--tta-border);
-  border-left: 4px solid var(--tta-accent);
-  border-radius: var(--tta-radius);
-  background: var(--tta-surface);
-  padding: 0.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.tta .tta-moon-main { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--tta-gap); }
-.tta .tta-moon-main label { display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.85rem; }
-.tta .tta-moon-main label input[type="number"] { width: 6rem; }
-.tta .tta-moon-preview { --tta-moon-size: 1.6rem; display: flex; align-items: center; padding-bottom: 0.2rem; }
-.tta .tta-moon-footer { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tta-gap); }
-.tta .tta-moon-phase-label { margin: 0; font-size: 0.85rem; color: var(--tta-muted); }
-.tta .tta-moon-phase-label strong { color: var(--tta-text); margin-left: 0.25rem; }
-.tta .tta-moon-controls { margin-left: auto; display: flex; gap: 0.25rem; }
-
-/* Export and import controls. */
-.tta .tta-button-row { display: flex; flex-wrap: wrap; gap: var(--tta-gap); margin-top: var(--tta-gap); }
+.tta-sidebar-button:hover { background: color-mix(in srgb, #9184d9 14%, transparent); }
+.tta-sidebar-button:active { background: color-mix(in srgb, #9184d9 24%, transparent); }
+.tta-sidebar-button:focus-visible { outline: 2px solid #9184d9; outline-offset: 2px; }
 
 /* Prompt dialogs opened from the calendar. */
 .tta-prompt { display: flex; flex-direction: column; gap: 0.35rem; }
 .tta-prompt-grid { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 0.4rem; }
+.tta-prompt .tta-time-inputs { display: flex; align-items: center; gap: 0.25rem; }
+.tta-prompt .tta-time-inputs input { width: 4rem; }
 
 /* Respect reduced-motion preferences: the module has no essential animation. */
 @media (prefers-reduced-motion: reduce) {
-  .tta * { transition: none !important; animation: none !important; }
+  .tta, .tta * { transition: none !important; animation: none !important; }
 }
