@@ -4,6 +4,24 @@ All notable changes to Through the Ages are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-08-18
+
+### Added
+
+- A shared 24-hour campaign clock and GM preset controls for one minute, ten minutes,
+  one hour, ten hours, one day, next adventure day at 07:00, one week, and one custom
+  calendar month.
+- System-neutral synchronization of module-controlled advances to Foundry world time
+  through the public API, allowing game systems and modules to process their own
+  duration behaviour without Through the Ages modifying their data.
+- A confirmation-aware Set Date and Time workflow, plus an external-world-time
+  warning and acknowledgement control.
+
+### Changed
+
+- Existing calendar data migrates to schema version 2 with a default clock time of
+  00:00, preserving the world's existing Foundry world time.
+
 ## [1.0.1] - 2026-08-18
 
 ### Fixed
@@ -46,5 +64,6 @@ Initial release, targeting Foundry VTT v14 build 366.
 - Full English localisation and a versioned, idempotent data-migration framework.
 - Public API at `game.modules.get("through-the-ages").api`.
 
+[1.1.0]: https://github.com/sargas79/through-the-ages/releases/tag/v1.1.0
 [1.0.1]: https://github.com/sargas79/through-the-ages/releases/tag/v1.0.1
 [1.0.0]: https://github.com/sargas79/through-the-ages/releases/tag/v1.0.0

@@ -9,10 +9,14 @@ import { findAgeForYear, visibleAges } from "./age-service.js";
 import {
   addDays,
   addMonths,
+  addSeconds,
   addYears,
   clampDate,
+  clampTime,
   isValidDate,
   monthName,
+  secondsUntilNextAdventureDay,
+  toAbsoluteDay,
   weekdayName
 } from "./date-service.js";
 import { migrateCalendarData, needsMigration } from "./migration-service.js";
@@ -32,6 +36,11 @@ export function getCalendar() {
 /** The shared current date. */
 export function getCurrentDate() {
   return getCalendar().currentDate;
+}
+
+/** The shared campaign clock, stored to minute precision. */
+export function getCurrentTime() {
+  return getCalendar().currentTime;
 }
 
 /** Every configured Age, ordered. */
@@ -84,6 +93,12 @@ export async function saveAges(ages) {
  * @returns {object|null} the applied date, or null when the change was refused
  */
 export async function setCurrentDate(date) {
+  const applied = await setCurrentDateTime(date, getCurrentTime());
+  return applied?.date ?? null;
+}
+
+/** Set the shared campaign date and time. Out-of-range values are clamped. */
+export async function setCurrentDateTime(date, time) {
   if (!canChangeTime()) {
     ui.notifications.warn(t("TTA.Errors.TimeGMOnly"));
     return null;
@@ -93,28 +108,124 @@ export async function setCurrentDate(date) {
   const target = isValidDate(date, calendar) ? date : clampDate(date, calendar);
   if (!isValidDate(date, calendar)) log("warn", "Requested date was out of range and has been clamped", date, target);
 
-  const updated = { ...data, calendar: { ...calendar, currentDate: target } };
+  const targetTime = {
+    hour: Math.min(Math.max(0, Math.trunc(Number(time?.hour) || 0)), 23),
+    minute: Math.min(Math.max(0, Math.trunc(Number(time?.minute) || 0)), 59)
+  };
+  const updated = { ...data, calendar: { ...calendar, currentDate: target, currentTime: targetTime } };
   await game.settings.set(MODULE_ID, SETTINGS.CALENDAR_DATA, updated);
+  Hooks.callAll(`${MODULE_ID}.timeChanged`, { date: target, time: targetTime });
   Hooks.callAll(`${MODULE_ID}.dateChanged`, target);
-  return target;
+  return { date: target, time: targetTime };
 }
 
 /** Advance (or rewind) the campaign date by whole days. GM only. */
 export async function advanceDays(delta) {
-  const calendar = getCalendar();
-  return setCurrentDate(addDays(calendar.currentDate, delta, calendar));
+  const result = await advanceTime(Math.trunc(delta) * 86400);
+  return result?.date ?? null;
 }
 
 /** Advance (or rewind) the campaign date by whole months. GM only. */
 export async function advanceMonths(delta) {
   const calendar = getCalendar();
-  return setCurrentDate(addMonths(calendar.currentDate, delta, calendar));
+  const target = addMonths(calendar.currentDate, delta, calendar);
+  const result = await advanceTo(target, calendar.currentTime);
+  return result?.date ?? null;
 }
 
 /** Advance (or rewind) the campaign date by whole years. GM only. */
 export async function advanceYears(delta) {
   const calendar = getCalendar();
-  return setCurrentDate(addYears(calendar.currentDate, delta, calendar));
+  const target = addYears(calendar.currentDate, delta, calendar);
+  const result = await advanceTo(target, calendar.currentTime);
+  return result?.date ?? null;
+}
+
+/** Advance the campaign by exact elapsed seconds through Foundry's world clock. */
+export async function advanceTime(seconds) {
+  const calendar = getCalendar();
+  const target = addSeconds(calendar.currentDate, calendar.currentTime, seconds, calendar);
+  return advanceTo(target.date, target.time);
+}
+
+/** Advance to 07:00 on the following campaign day. */
+export async function advanceToNextAdventureDay() {
+  return advanceTime(secondsUntilNextAdventureDay(getCurrentTime()));
+}
+
+/** Apply a target calendar time and its matching delta to Foundry world time. */
+export async function advanceTo(date, time) {
+  if (!canChangeTime()) {
+    ui.notifications.warn(t("TTA.Errors.TimeGMOnly"));
+    return null;
+  }
+
+  const calendar = getCalendar();
+  const targetDate = isValidDate(date, calendar) ? date : clampDate(date, calendar);
+  const targetTime = clampTime(time);
+  const currentSeconds = (toAbsoluteDay(calendar.currentDate, calendar) * 86400)
+    + (calendar.currentTime.hour * 3600) + (calendar.currentTime.minute * 60);
+  const targetSeconds = (toAbsoluteDay(targetDate, calendar) * 86400)
+    + (targetTime.hour * 3600) + (targetTime.minute * 60);
+  const elapsedSeconds = targetSeconds - currentSeconds;
+  if (elapsedSeconds === 0) return { date: calendar.currentDate, time: calendar.currentTime, elapsedSeconds: 0 };
+
+  const currentWorldTime = game.time.worldTime;
+  const expectedWorldTime = currentWorldTime + elapsedSeconds;
+  try {
+    // Store the expected value before advancing so every client can recognise this update.
+    await game.settings.set(MODULE_ID, SETTINGS.WORLD_TIME, expectedWorldTime);
+    await game.time.advance(elapsedSeconds);
+  } catch (error) {
+    await game.settings.set(MODULE_ID, SETTINGS.WORLD_TIME, currentWorldTime);
+    log("error", "Failed to advance Foundry world time", error);
+    ui.notifications.error(t("TTA.Errors.TimeAdvanceFailed"));
+    return null;
+  }
+
+  try {
+    const applied = await setCurrentDateTime(targetDate, targetTime);
+    return applied ? { ...applied, elapsedSeconds } : null;
+  } catch (error) {
+    log("error", "Foundry world time advanced but calendar persistence failed", error);
+    ui.notifications.error(t("TTA.Errors.TimeCalendarSyncFailed"));
+    return null;
+  }
+}
+
+/** Set the initial checkpoint without altering either existing clock. GM only. */
+export async function initializeWorldTimeCheckpoint() {
+  if (!isGM()) return;
+  const checkpoint = game.settings.get(MODULE_ID, SETTINGS.WORLD_TIME);
+  if (typeof checkpoint !== "number" || !Number.isFinite(checkpoint)) {
+    await game.settings.set(MODULE_ID, SETTINGS.WORLD_TIME, game.time.worldTime);
+  }
+}
+
+/** Whether Foundry world time changed since the module's last acknowledged value. */
+export function isWorldTimeOutOfSync() {
+  const checkpoint = game.settings.get(MODULE_ID, SETTINGS.WORLD_TIME);
+  return typeof checkpoint === "number" && Number.isFinite(checkpoint)
+    && checkpoint !== game.time.worldTime;
+}
+
+/** Accept the current Foundry world time without changing the campaign calendar. */
+export async function acknowledgeWorldTime() {
+  if (!canChangeTime()) {
+    ui.notifications.warn(t("TTA.Errors.TimeGMOnly"));
+    return false;
+  }
+  await game.settings.set(MODULE_ID, SETTINGS.WORLD_TIME, game.time.worldTime);
+  return true;
+}
+
+/** Warn GMs when another source changes Foundry world time independently. */
+export function onWorldTimeUpdated(worldTime) {
+  const checkpoint = game.settings.get(MODULE_ID, SETTINGS.WORLD_TIME);
+  if (typeof checkpoint !== "number" || !Number.isFinite(checkpoint) || worldTime === checkpoint) return;
+  if (isGM()) ui.notifications.warn(t("TTA.Errors.TimeOutOfSync"));
+  log("warn", "Foundry world time changed outside Through the Ages", { worldTime, checkpoint });
+  rerenderModuleApps();
 }
 
 /** A human-readable date label using the configured month and weekday names. */
@@ -124,6 +235,11 @@ export function formatDate(date, { withWeekday = true } = {}) {
   const base = t("TTA.Format.Date", { day: date.day, month, year: date.year });
   if (!withWeekday) return base;
   return t("TTA.Format.DateWithWeekday", { weekday: weekdayName(date, calendar), date: base });
+}
+
+/** A consistent 24-hour clock label for the stored minute-precision time. */
+export function formatTime(time = getCurrentTime()) {
+  return `${String(time.hour).padStart(2, "0")}:${String(time.minute).padStart(2, "0")}`;
 }
 
 /** A human-readable month label. */

@@ -3,7 +3,7 @@
   <header class="tta-header">
     <div class="tta-header-date">
       <span class="tta-eyebrow">{{localize "TTA.Calendar.CurrentDate"}}</span>
-      <h2 class="tta-current-date">{{currentDateLabel}}</h2>
+      <h2 class="tta-current-date">{{currentDateLabel}} <span class="tta-current-time">{{currentTimeLabel}}</span></h2>
       {{#if currentAge}}
         <p class="tta-current-age" style="--tta-accent: {{currentAge.color}}">
           <i class="fa-solid fa-hourglass-half" aria-hidden="true"></i>
@@ -24,13 +24,24 @@
           <button type="button" data-action="nextDay" data-tooltip="{{localize "TTA.Time.NextDay"}}" aria-label="{{localize "TTA.Time.NextDay"}}">
             <i class="fa-solid fa-forward-step" aria-hidden="true"></i>
           </button>
-          <button type="button" data-action="advanceDays">
+          <select data-time-preset aria-label="{{localize "TTA.Time.AdvancePresetLabel"}}">
+            {{#each timePresets}}
+              <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+          <button type="button" data-action="advanceTime">
             <i class="fa-solid fa-forward" aria-hidden="true"></i> {{localize "TTA.Time.Advance"}}
           </button>
           <button type="button" data-action="setDate">
             <i class="fa-solid fa-calendar-check" aria-hidden="true"></i> {{localize "TTA.Time.SetDate"}}
           </button>
         </div>
+        {{#if worldTimeOutOfSync}}
+          <p class="tta-time-warning">
+            {{localize "TTA.Time.OutOfSync"}}
+            <button type="button" data-action="acknowledgeWorldTime">{{localize "TTA.Time.Acknowledge"}}</button>
+          </p>
+        {{/if}}
       {{/if}}
 
       <div class="tta-header-links">

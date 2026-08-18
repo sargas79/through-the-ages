@@ -58,6 +58,13 @@ export function registerSettings() {
     default: 0
   });
 
+  game.settings.register(MODULE_ID, SETTINGS.WORLD_TIME, {
+    scope: "world",
+    config: false,
+    type: Number,
+    default: null
+  });
+
   // --- GM-facing options ----------------------------------------------------
 
   game.settings.registerMenu(MODULE_ID, "calendarConfigMenu", {

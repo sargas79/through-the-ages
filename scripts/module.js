@@ -12,7 +12,11 @@ import { loadTemplates, log } from "./compat.js";
 import { MODULE_ID, MODULE_TITLE } from "./constants.js";
 import { registerHooks } from "./hooks.js";
 import { registerSettings } from "./settings.js";
-import { onCalendarDataChanged, runMigrationIfNeeded } from "./services/calendar-service.js";
+import {
+  initializeWorldTimeCheckpoint,
+  onCalendarDataChanged,
+  runMigrationIfNeeded
+} from "./services/calendar-service.js";
 import { ensureFolder } from "./services/journal-service.js";
 import { registerSocketHandlers } from "./services/note-service.js";
 import { isGM } from "./services/permission-service.js";
@@ -57,6 +61,7 @@ Hooks.once("ready", async () => {
     try {
       await runMigrationIfNeeded();
       await ensureFolder();
+      await initializeWorldTimeCheckpoint();
     } catch (error) {
       log("error", "Startup tasks failed", error);
       ui.notifications.error(game.i18n.localize("TTA.Errors.StartupFailed"));

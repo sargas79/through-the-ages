@@ -11,14 +11,21 @@ import { MODULE_ID, SCOPE } from "../constants.js";
 import { endYear } from "../services/age-service.js";
 import {
   advanceDays,
+  advanceMonths,
+  advanceTime,
+  advanceTo,
+  advanceToNextAdventureDay,
+  acknowledgeWorldTime,
   formatDate,
+  formatTime,
   formatMonth,
   getAgeForYear,
   getCalendar,
   getCurrentAge,
   getCurrentDate,
+  getCurrentTime,
   isConfigured,
-  setCurrentDate
+  isWorldTimeOutOfSync,
 } from "../services/calendar-service.js";
 import {
   addMonths,
@@ -66,6 +73,7 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
     this.viewMonth = current.month;
     this.selectedDay = current.day;
     this.filter = "all";
+    this.timePreset = "minute";
   }
 
   static DEFAULT_OPTIONS = {
@@ -86,7 +94,8 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
       selectDay: CalendarApp.onSelectDay,
       prevDay: CalendarApp.onPrevDay,
       nextDay: CalendarApp.onNextDay,
-      advanceDays: CalendarApp.onAdvanceDays,
+      advanceTime: CalendarApp.onAdvanceTime,
+      acknowledgeWorldTime: CalendarApp.onAcknowledgeWorldTime,
       setDate: CalendarApp.onSetDate,
       openConfig: CalendarApp.onOpenConfig,
       openTimeline: CalendarApp.onOpenTimeline,
@@ -179,6 +188,7 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
       viewingCurrentMonth: isSameMonth({ year: this.viewYear, month: this.viewMonth }, current),
       currentDate: current,
       currentDateLabel: formatDate(current),
+      currentTimeLabel: formatTime(),
       currentAge: currentAge ? { ...currentAge, endYear: endYear(currentAge) } : null,
       viewAge: viewAge ? { ...viewAge, endYear: endYear(viewAge) } : null,
       selectedDay: this.selectedDay,
@@ -191,9 +201,17 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
       monthEvents,
       hasDayContent: dayNotes.length > 0 || dayEvents.length > 0,
       canChangeTime: canChangeTime(),
+      worldTimeOutOfSync: isWorldTimeOutOfSync(),
       canConfigure: canConfigureCalendar(),
       canPromote: canPromoteNotes(),
       canViewTimeline: canViewTimeline(),
+      timePresets: [
+        "minute", "tenMinutes", "hour", "tenHours", "day", "adventureDay", "week", "month"
+      ].map(value => ({
+        value,
+        label: t(`TTA.Time.Preset.${value}`),
+        selected: value === this.timePreset
+      })),
       canAddDayNote: scopes.includes(SCOPE.DAY),
       canAddMonthNote: scopes.includes(SCOPE.MONTH),
       showFilters: gm,
@@ -217,6 +235,10 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
     filter?.addEventListener("change", event => {
       this.filter = event.currentTarget.value;
       this.render();
+    });
+    const preset = this.element.querySelector("[data-time-preset]");
+    preset?.addEventListener("change", event => {
+      this.timePreset = event.currentTarget.value;
     });
   }
 
@@ -268,25 +290,29 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
     CalendarApp.onGotoCurrent.call(this);
   }
 
-  static async onAdvanceDays() {
-    const result = await promptForm({
-      title: t("TTA.Time.AdvanceTitle"),
-      content: `<div class="tta-prompt">
-        <label for="tta-advance-days">${t("TTA.Time.AdvanceLabel")}</label>
-        <input id="tta-advance-days" type="number" name="days" value="1" step="1" autofocus>
-      </div>`,
-      okLabel: t("TTA.Time.Advance")
-    });
-    if (!result) return;
-    const days = Number(result.days);
-    if (!Number.isFinite(days) || days === 0) return;
-    await advanceDays(Math.trunc(days));
+  static async onAdvanceTime() {
+    const advances = {
+      minute: () => advanceTime(60),
+      tenMinutes: () => advanceTime(600),
+      hour: () => advanceTime(3600),
+      tenHours: () => advanceTime(36000),
+      day: () => advanceTime(86400),
+      adventureDay: () => advanceToNextAdventureDay(),
+      week: () => advanceTime(604800),
+      month: () => advanceMonths(1)
+    };
+    await advances[this.timePreset]?.();
     CalendarApp.onGotoCurrent.call(this);
+  }
+
+  static async onAcknowledgeWorldTime() {
+    if (await acknowledgeWorldTime()) this.render();
   }
 
   static async onSetDate() {
     const calendar = getCalendar();
     const current = getCurrentDate();
+    const currentTime = getCurrentTime();
     const monthOptions = calendar.monthNames
       .map((name, index) => `<option value="${index + 1}" ${index + 1 === current.month ? "selected" : ""}>${foundry.utils.escapeHTML(name)}</option>`)
       .join("");
@@ -300,16 +326,29 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
         <select id="tta-set-month" name="month">${monthOptions}</select>
         <label for="tta-set-day">${t("TTA.Common.Day")}</label>
         <input id="tta-set-day" type="number" name="day" min="1" max="${calendar.daysPerMonth}" step="1" value="${current.day}">
+        <label for="tta-set-hour">${t("TTA.Common.Time")}</label>
+        <div class="tta-time-inputs">
+          <input id="tta-set-hour" type="number" name="hour" min="0" max="23" step="1" value="${currentTime.hour}" aria-label="${t("TTA.Time.Hour")}">
+          <span aria-hidden="true">:</span>
+          <input type="number" name="minute" min="0" max="59" step="1" value="${currentTime.minute}" aria-label="${t("TTA.Time.Minute")}">
+        </div>
       </div>`,
       okLabel: t("TTA.Time.SetDate")
     });
     if (!result) return;
 
-    await setCurrentDate({
+    const confirmed = await confirmDialog({
+      title: t("TTA.Time.SetDateConfirmTitle"),
+      content: `<p>${t("TTA.Time.SetDateConfirmBody")}</p>`,
+      yesLabel: t("TTA.Time.SetDate")
+    });
+    if (!confirmed) return;
+
+    await advanceTo({
       year: Number(result.year),
       month: Number(result.month),
       day: Number(result.day)
-    });
+    }, { hour: Number(result.hour), minute: Number(result.minute) });
     CalendarApp.onGotoCurrent.call(this);
   }
 

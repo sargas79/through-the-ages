@@ -6,6 +6,7 @@
 import { log, rerenderModuleApps } from "./compat.js";
 import { FLAGS, MODULE_ID } from "./constants.js";
 import { CalendarApp } from "./applications/calendar-app.js";
+import { onWorldTimeUpdated } from "./services/calendar-service.js";
 
 /** Open (or focus) the calendar window. */
 export function openCalendar() {
@@ -67,6 +68,7 @@ function onDocumentChanged(document) {
 
 export function registerHooks() {
   Hooks.on("getSceneControlButtons", onGetSceneControlButtons);
+  Hooks.on("updateWorldTime", onWorldTimeUpdated);
 
   for (const event of ["createJournalEntry", "updateJournalEntry", "deleteJournalEntry"]) {
     Hooks.on(event, onDocumentChanged);

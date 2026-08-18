@@ -12,6 +12,7 @@
       "MoveUp": "Move up",
       "Remove": "Remove",
       "SaveChanges": "Save Changes",
+      "Time": "Time",
       "UnknownDate": "Unknown date",
       "Year": "Year",
       "YearRange": "Years"
@@ -49,13 +50,28 @@
       "Today": "Current date"
     },
     "Time": {
+      "Acknowledge": "Use current Foundry time",
       "Advance": "Advance",
-      "AdvanceLabel": "Number of days to advance (negative values rewind)",
-      "AdvanceTitle": "Advance Time",
+      "AdvancePresetLabel": "Amount of time to advance",
       "ControlsLabel": "Campaign time controls",
+      "Hour": "Hour",
+      "Minute": "Minute",
       "NextDay": "Next day",
+      "OutOfSync": "Foundry world time changed outside this calendar.",
+      "Preset": {
+        "minute": "1 minute",
+        "tenMinutes": "10 minutes",
+        "hour": "1 hour",
+        "tenHours": "10 hours",
+        "day": "1 day (24 hours)",
+        "adventureDay": "Next adventure day (07:00)",
+        "week": "1 week",
+        "month": "1 month"
+      },
       "PrevDay": "Previous day",
       "SetDate": "Set Date",
+      "SetDateConfirmBody": "Changing campaign time also changes Foundry world time. Time-based effects handled by your game system may expire and cannot be restored automatically when time is moved back.",
+      "SetDateConfirmTitle": "Confirm Campaign Time Change",
       "SetDateTitle": "Set the Campaign Date"
     },
     "Notes": {
@@ -250,6 +266,9 @@
       "RequestTimedOut": "No Game Master responded in time. Please try again.",
       "StartupFailed": "Through the Ages could not complete its start-up checks. See the console for details.",
       "TimeGMOnly": "Only a Game Master can change the campaign date.",
+      "TimeAdvanceFailed": "Foundry world time could not be advanced. The campaign calendar was not changed.",
+      "TimeCalendarSyncFailed": "Foundry world time advanced, but the campaign calendar could not be saved. Reload and reconcile the campaign time before advancing again.",
+      "TimeOutOfSync": "Foundry world time changed outside Through the Ages. The campaign calendar was not changed.",
       "TimelineHidden": "The Game Master has not made the timeline available to players."
     },
     "Validation": {

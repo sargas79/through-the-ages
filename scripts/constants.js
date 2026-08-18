@@ -6,7 +6,7 @@
 
 export const MODULE_ID = "through-the-ages";
 export const MODULE_TITLE = "Through the Ages";
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const SOCKET_EVENT = `module.${MODULE_ID}`;
 
@@ -23,7 +23,8 @@ export const SETTINGS = {
   SHOW_TIMELINE_TO_PLAYERS: "showTimelineToPlayers",
   TIMELINE_MODE: "defaultTimelineMode",
   DEBUG: "debugLogging",
-  SCHEMA_VERSION: "schemaVersion"
+  SCHEMA_VERSION: "schemaVersion",
+  WORLD_TIME: "synchronizedWorldTime"
 };
 
 /** Flag keys written under `flags.through-the-ages`. */
@@ -102,7 +103,8 @@ export const DEFAULT_CALENDAR_DATA = {
     daysPerMonth: 30,
     monthNames: [...DEFAULT_MONTH_NAMES],
     weekdayNames: [...DEFAULT_WEEKDAY_NAMES],
-    currentDate: { year: 1, month: 1, day: 1 }
+    currentDate: { year: 1, month: 1, day: 1 },
+    currentTime: { hour: 0, minute: 0 }
   },
   ages: []
 };

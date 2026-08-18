@@ -70,6 +70,16 @@ describe("migrateCalendarData", () => {
     assert.deepEqual(result.calendar.currentDate, { year: 1, month: 3, day: 10 });
   });
 
+  it("migrates date-only calendars to midnight", () => {
+    const result = migrateCalendarData({ calendar: { currentDate: { year: 2, month: 3, day: 4 } } });
+    assert.deepEqual(result.calendar.currentTime, { hour: 0, minute: 0 });
+  });
+
+  it("clamps the current time into a 24-hour clock", () => {
+    const result = migrateCalendarData({ calendar: { currentTime: { hour: 30, minute: -2 } } });
+    assert.deepEqual(result.calendar.currentTime, { hour: 23, minute: 0 });
+  });
+
   it("clamps out-of-range structural values instead of failing", () => {
     const result = migrateCalendarData({ calendar: { monthsPerYear: 999, daysPerMonth: -4 } });
     assert.ok(result.calendar.monthsPerYear <= 24);

@@ -27,11 +27,17 @@ export function buildApi() {
     // Calendar state
     getCalendar: calendarService.getCalendar,
     getCurrentDate: calendarService.getCurrentDate,
+    getCurrentTime: calendarService.getCurrentTime,
     getCurrentAge: calendarService.getCurrentAge,
     getAges: calendarService.getAges,
     formatDate: calendarService.formatDate,
+    formatTime: calendarService.formatTime,
     setCurrentDate: calendarService.setCurrentDate,
+    setCurrentDateTime: calendarService.setCurrentDateTime,
     advanceDays: calendarService.advanceDays,
+    advanceTime: calendarService.advanceTime,
+    advanceToNextAdventureDay: calendarService.advanceToNextAdventureDay,
+    acknowledgeWorldTime: calendarService.acknowledgeWorldTime,
 
     // Notes
     getNotesForKey: noteService.getNotesForKey,
