@@ -72,7 +72,7 @@
       "SetDate": "Set Date",
       "SetDateConfirmBody": "Changing campaign time also changes Foundry world time. Time-based effects handled by your game system may expire and cannot be restored automatically when time is moved back.",
       "SetDateConfirmTitle": "Confirm Campaign Time Change",
-      "SetDateTitle": "Set the Campaign Date"
+      "SetDateTitle": "Set the Campaign Date and Time"
     },
     "Notes": {
       "AddDay": "Add day note",
