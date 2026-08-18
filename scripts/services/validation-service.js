@@ -132,7 +132,7 @@ export function validateMoons(moons = [], calendar = null) {
     }
   }
 
-  const dupeNames = duplicates(moons.map(moon => moon?.name));
+  const dupeNames = duplicates(moons.map(moon => moon?.name).filter(name => String(name ?? "").trim()));
   if (dupeNames.length) errors.push(issue("moonNameDuplicate", { names: dupeNames.join(", ") }));
 
   return { valid: errors.length === 0, errors, warnings };

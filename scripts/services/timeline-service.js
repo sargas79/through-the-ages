@@ -93,6 +93,7 @@ export async function replaceEvents(events) {
     ui.notifications.warn(t("TTA.Errors.EventGMOnly"));
     return null;
   }
+  for (const event of events) assertValid(event);
   const written = await writeEvents(events);
   log("debug", `Replaced timeline events with ${written.length} imported records`);
   return written;

@@ -32,7 +32,7 @@ import { openCalendar } from "./hooks.js";
  */
 async function importCalendar(jsonText, { applyEvents = true } = {}) {
   const parsed = portabilityService.parseImport(jsonText);
-  if (!parsed.data) {
+  if (!parsed.ok) {
     const message = parsed.errors.map(error => t(`TTA.Validation.${error.code}`, error.data)).join(" ");
     ui.notifications.error(message || t("TTA.Errors.ImportInvalid"));
     return null;

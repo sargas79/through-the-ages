@@ -367,7 +367,7 @@ export class CalendarConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
     }
 
     const parsed = portability.parseImport(text);
-    if (!parsed.data) {
+    if (!parsed.ok) {
       const message = parsed.errors.map(error => t(`TTA.Validation.${error.code}`, error.data)).join(" ");
       ui.notifications.error(message || t("TTA.Errors.ImportInvalid"));
       return;
