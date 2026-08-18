@@ -40,6 +40,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Content is always reachable.** Every window now lays out as a flex column with
+  one scrolling region, and the content host scrolls as a last resort, so nothing
+  can be clipped out of reach when a window is small or its content long: the
+  configuration body scrolls under a fixed Save footer, the month grid scrolls
+  sideways rather than crushing its cells in a world with many weekdays, the Age
+  band row scrolls past a readable floor, and the detail panel, timeline body and
+  long note bodies each carry their own scrollbar. Scrollbars are painted from the
+  module's palette rather than inheriting Foundry's.
+- Age bands were sized by the wrong element: the proportional `flex` was set on the
+  band button while its wrapping list item — the actual flex child of the row —
+  sized to its content, so every Age drew at roughly the same width regardless of
+  duration.
 - The calendar could refuse to reopen after being closed. A closed application can
   linger in Foundry's instance registry under its id; `openCalendar` now re-renders
   that instance instead of constructing a second one with the same id, which orphaned

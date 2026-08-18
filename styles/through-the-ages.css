@@ -83,12 +83,42 @@
   color: var(--tta-text);
 }
 
+/* Nothing in a module window may become unreachable. Each window lays out as a
+ * flex column whose one scrolling region carries the overflow, and the content
+ * host scrolls too as a last resort: if a pane's own scroller is ever defeated
+ * — an oversized embedded editor, a very long note, a narrow window — the
+ * window still scrolls to it rather than clipping it away.
+ */
 .tta .window-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
   background: var(--tta-bg);
   font-size: 15px;
   line-height: 1.55;
   padding: 0;
 }
+
+/* Auto-height windows (the note and event editors) size to their content, so
+   they are clamped to the viewport and scroll inside it. */
+.tta.application { max-height: 100vh; }
+
+/* Scrollbars painted from the module's own palette, since the windows do not
+   take Foundry's ground. */
+.tta * { scrollbar-width: thin; scrollbar-color: var(--tta-neutral-700) transparent; }
+.tta ::-webkit-scrollbar { width: 10px; height: 10px; }
+.tta ::-webkit-scrollbar-track { background: transparent; }
+
+.tta ::-webkit-scrollbar-thumb {
+  background: var(--tta-neutral-800);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 6px;
+}
+
+.tta ::-webkit-scrollbar-thumb:hover { background: var(--tta-neutral-700); background-clip: padding-box; }
+.tta ::-webkit-scrollbar-corner { background: transparent; }
 
 .tta h2, .tta h3, .tta h4, .tta h5 {
   font-family: var(--tta-font-heading);
@@ -286,6 +316,7 @@
 .tta .tta-layout {
   display: flex;
   flex-direction: column;
+  flex: 1;
   height: 100%;
   min-height: 0;
   gap: 0;
@@ -307,6 +338,7 @@
 .tta .tta-grid-panel {
   flex: 1 1 560px;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   padding: 12px 13px 14px;
@@ -316,17 +348,26 @@
   flex: 1 1 340px;
   min-width: 280px;
   padding: 12px 13px 14px;
+  min-height: 0;
   background: color-mix(in srgb, var(--tta-bg) 60%, transparent);
   box-shadow: inset 1px 0 0 var(--tta-divider);
   overflow-y: auto;
 }
 
-.tta .tta-grid-wrap { min-height: 0; overflow-y: auto; }
+/* The header row and the grid share this scroller, so they stay aligned when a
+   world with many weekdays is scrolled sideways. */
+.tta .tta-grid-wrap { min-height: 0; overflow: auto; }
 
 @media (max-width: 860px) {
   .tta .tta-main { flex-direction: column; }
   .tta .tta-detail { box-shadow: inset 0 1px 0 var(--tta-divider); }
 }
+
+.tta .tta-strip,
+.tta .tta-header,
+.tta .tta-mode-bar,
+.tta .tta-timeline-toolbar,
+.tta .tta-footer { flex: none; }
 
 .tta .tta-footer {
   display: flex;
@@ -495,6 +536,9 @@
   display: grid;
   grid-template-columns: repeat(var(--tta-columns, 7), minmax(0, 1fr));
   gap: 4px;
+  /* A calendar may have up to 14 weekdays. Rather than let the cells squeeze
+     to nothing, the grid keeps a usable column width and its wrapper scrolls. */
+  min-width: calc(var(--tta-columns, 7) * 38px);
 }
 
 .tta .tta-grid-head > * {
@@ -802,12 +846,23 @@
   align-items: stretch;
   height: 72px;
   margin: 0 0 2px;
-  padding: 0;
+  padding: 0 0 2px;
   list-style: none;
+  /* Many Ages compress the row; past a readable floor it scrolls instead. */
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* The proportional share belongs to the list item, which is the flex child of
+   the row; the button simply fills whatever the item is given. */
+.tta .tta-bands > li {
+  flex: var(--tta-band-flex, 1);
+  min-width: 96px;
+  display: flex;
 }
 
 .tta .tta-band {
-  flex: var(--tta-band-flex, 1);
+  flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -946,11 +1001,14 @@
 
 /* ---------- Forms and configuration -------------------------------------- */
 
+/* The body is the window's one scrolling region; the footer with Save sits
+   outside it so it can never be scrolled out of reach. */
 .tta .tta-form-body,
 .tta .tta-config-body {
   display: grid;
   gap: var(--tta-space-4);
   padding: 13px;
+  flex: 1;
   overflow-y: auto;
   min-height: 0;
 }
@@ -992,6 +1050,8 @@
 .tta .tta-field textarea { width: 100%; }
 
 .tta .tta-field-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.tta .tta-field-grid > *,
+.tta .tta-name-grid > * { min-width: 0; }
 .tta .tta-field-grid-date { grid-template-columns: 1fr 1.4fr 1fr; }
 
 .tta .tta-name-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
@@ -1094,9 +1154,13 @@
 .tta .tta-config-part {
   display: flex;
   flex-direction: column;
+  flex: 1;
   min-height: 0;
   animation: tta-in 160ms ease-out;
 }
+
+/* The footer never scrolls away with the body above it. */
+.tta .tta-form-footer { flex: none; }
 
 .tta .tta-form-context {
   display: flex;
