@@ -1,50 +1,46 @@
 {{#if notes.length}}
   <ul class="tta-note-list">
     {{#each notes}}
-      <li class="tta-note tta-note-{{visibility}}">
-        <header class="tta-note-header">
-          <h5 class="tta-note-title">{{title}}</h5>
-          <span class="tta-note-badges">
-            <span class="tta-badge tta-badge-{{visibility}}" data-tooltip="{{visibilityLabel}}">
-              <i class="fa-solid {{#if (ttaEq visibility "players")}}fa-eye{{else}}fa-lock{{/if}}" aria-hidden="true"></i>
-              {{visibilityLabel}}
-            </span>
+      <li class="tta-note {{#if isGMNote}}tta-note-gm{{/if}}">
+        <div class="tta-note-body">
+          <div class="tta-note-title">{{title}}</div>
+
+          <div class="tta-note-meta">
+            <span class="tta-tag {{#if isGMNote}}tta-tag-accent{{/if}}">{{authorName}}</span>
+            <span class="tta-meta">{{visibilityLabel}}</span>
             {{#if promoted}}
-              <span class="tta-badge tta-badge-promoted" data-tooltip="{{localize "TTA.Notes.PromotedTooltip"}}">
-                <i class="fa-solid fa-landmark-flag" aria-hidden="true"></i> {{localize "TTA.Notes.Promoted"}}
-              </span>
+              <span class="tta-tag tta-tag-outline" data-tooltip="{{localize "TTA.Notes.PromotedTooltip"}}">{{localize "TTA.Notes.Promoted"}}</span>
             {{/if}}
-          </span>
-        </header>
+          </div>
 
-        <p class="tta-note-meta">
-          <i class="fa-solid fa-user-pen" aria-hidden="true"></i> {{authorName}}
-        </p>
+          {{#if enriched}}<div class="tta-note-content">{{{enriched}}}</div>{{/if}}
+        </div>
 
-        <div class="tta-note-content">{{{enriched}}}</div>
-
-        <footer class="tta-note-actions">
-          <button type="button" data-action="openJournal" data-uuid="{{uuid}}">
-            <i class="fa-solid fa-book-open" aria-hidden="true"></i> {{localize "TTA.Notes.OpenJournal"}}
-          </button>
-          {{#if canEdit}}
-            <button type="button" data-action="editNote" data-uuid="{{uuid}}">
-              <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> {{localize "TTA.Common.Edit"}}
-            </button>
-          {{/if}}
+        <span class="tta-note-actions">
           {{#if ../canPromote}}
             {{#unless promoted}}
-              <button type="button" data-action="promoteNote" data-uuid="{{uuid}}">
-                <i class="fa-solid fa-arrow-up-right-dots" aria-hidden="true"></i> {{localize "TTA.Notes.Promote"}}
-              </button>
+              <button type="button" class="tta-ghost tta-compact" data-action="promoteNote" data-uuid="{{uuid}}">{{localize "TTA.Notes.PromoteShort"}}</button>
             {{/unless}}
           {{/if}}
-          {{#if canDelete}}
-            <button type="button" class="tta-danger" data-action="deleteNote" data-uuid="{{uuid}}">
-              <i class="fa-solid fa-trash" aria-hidden="true"></i> {{localize "TTA.Common.Delete"}}
+          <span class="tta-row">
+            <button type="button" class="tta-icon-only" data-action="openJournal" data-uuid="{{uuid}}"
+                    data-tooltip="{{localize "TTA.Notes.OpenJournal"}}" aria-label="{{localize "TTA.Notes.OpenJournal"}}">
+              <i class="fa-solid fa-book-open" aria-hidden="true"></i>
             </button>
-          {{/if}}
-        </footer>
+            {{#if canEdit}}
+              <button type="button" class="tta-icon-only" data-action="editNote" data-uuid="{{uuid}}"
+                      data-tooltip="{{localize "TTA.Common.Edit"}}" aria-label="{{localize "TTA.Common.Edit"}}">
+                <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+              </button>
+            {{/if}}
+            {{#if canDelete}}
+              <button type="button" class="tta-icon-only tta-danger" data-action="deleteNote" data-uuid="{{uuid}}"
+                      data-tooltip="{{localize "TTA.Common.Delete"}}" aria-label="{{localize "TTA.Common.Delete"}}">
+                <i class="fa-solid fa-trash" aria-hidden="true"></i>
+              </button>
+            {{/if}}
+          </span>
+        </span>
       </li>
     {{/each}}
   </ul>

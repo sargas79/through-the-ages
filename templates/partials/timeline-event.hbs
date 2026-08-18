@@ -1,45 +1,39 @@
-<li class="tta-timeline-event" style="--tta-accent: {{color}}">
-  <span class="tta-event-icon" aria-hidden="true"><i class="{{icon}}"></i></span>
+<li class="tta-timeline-event" style="--tta-tint: {{color}}">
+  <span class="tta-event-dot" aria-hidden="true"></span>
 
   <div class="tta-event-body">
-    <header class="tta-event-header">
-      <h5 class="tta-event-title">{{title}}</h5>
-      <span class="tta-event-date">{{dateLabel}}</span>
-    </header>
+    <div class="tta-event-title">
+      <i class="{{icon}}" aria-hidden="true"></i> {{title}}
+    </div>
 
-    <p class="tta-event-badges">
-      <span class="tta-badge tta-badge-{{visibility}}">
-        <i class="fa-solid {{#if isPlayerVisible}}fa-eye{{else}}fa-lock{{/if}}" aria-hidden="true"></i>
-        {{visibilityLabel}}
-      </span>
+    <div class="tta-event-meta">
+      <span class="tta-key">{{dateLabel}}</span>
+      <span class="tta-tag {{#unless isPlayerVisible}}tta-tag-accent{{/unless}}">{{visibilityLabel}}</span>
       {{#if showOrigin}}
-        <span class="tta-badge tta-badge-origin" data-tooltip="{{localize "TTA.Timeline.OriginTooltip"}}">
-          <i class="fa-solid fa-arrow-up-right-dots" aria-hidden="true"></i>
-          {{localize "TTA.Timeline.Origin"}}
-        </span>
+        {{#if sourceAvailable}}
+          <button type="button" class="tta-ghost tta-compact" data-action="openSource" data-uuid="{{sourceUuid}}"
+                  data-tooltip="{{localize "TTA.Timeline.OriginTooltip"}}">
+            {{localize "TTA.Timeline.Origin"}} &#x2197;
+          </button>
+        {{else}}
+          <span class="tta-meta">{{localize "TTA.Timeline.SourceUnavailable"}}</span>
+        {{/if}}
       {{/if}}
-    </p>
+    </div>
 
     {{#if enriched}}<div class="tta-event-content">{{{enriched}}}</div>{{/if}}
-
-    {{#if @root.canManage}}
-      <footer class="tta-event-actions">
-        <button type="button" data-action="editEvent" data-event-id="{{id}}">
-          <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> {{localize "TTA.Common.Edit"}}
-        </button>
-        {{#if showOrigin}}
-          {{#if sourceAvailable}}
-            <button type="button" data-action="openSource" data-uuid="{{sourceUuid}}">
-              <i class="fa-solid fa-book-open" aria-hidden="true"></i> {{localize "TTA.Timeline.OpenSource"}}
-            </button>
-          {{else}}
-            <span class="tta-muted tta-source-missing">{{localize "TTA.Timeline.SourceUnavailable"}}</span>
-          {{/if}}
-        {{/if}}
-        <button type="button" class="tta-danger" data-action="deleteEvent" data-event-id="{{id}}">
-          <i class="fa-solid fa-trash" aria-hidden="true"></i> {{localize "TTA.Common.Delete"}}
-        </button>
-      </footer>
-    {{/if}}
   </div>
+
+  {{#if @root.canManage}}
+    <span class="tta-event-actions">
+      <button type="button" class="tta-icon-only" data-action="editEvent" data-event-id="{{id}}"
+              data-tooltip="{{localize "TTA.Common.Edit"}}" aria-label="{{localize "TTA.Common.Edit"}}">
+        <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+      </button>
+      <button type="button" class="tta-icon-only tta-danger" data-action="deleteEvent" data-event-id="{{id}}"
+              data-tooltip="{{localize "TTA.Common.Delete"}}" aria-label="{{localize "TTA.Common.Delete"}}">
+        <i class="fa-solid fa-trash" aria-hidden="true"></i>
+      </button>
+    </span>
+  {{/if}}
 </li>

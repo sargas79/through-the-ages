@@ -27,6 +27,9 @@ const ICON_CHOICES = [
   "fa-solid fa-tower-observation"
 ];
 
+/** Quick picks offered beside the colour input; any colour is still allowed. */
+const COLOR_SWATCHES = [DEFAULT_COLOR, "#3d6a8f", "#6f5aa8", "#c98a3d"];
+
 export class EventEditorApp extends HandlebarsApplicationMixin(ApplicationV2) {
   /**
    * @param {object} config
@@ -50,6 +53,9 @@ export class EventEditorApp extends HandlebarsApplicationMixin(ApplicationV2) {
       resizable: true
     },
     position: { width: 640, height: "auto" },
+    actions: {
+      pickColor: EventEditorApp.onPickColor
+    },
     form: {
       handler: EventEditorApp.onSubmit,
       closeOnSubmit: true,
@@ -87,6 +93,7 @@ export class EventEditorApp extends HandlebarsApplicationMixin(ApplicationV2) {
       dateLabel: formatDate({ year: parsed.year, month: parsed.month || 1, day: parsed.day || 1 }),
       title: this.event?.title ?? this.sourceNote?.title ?? "",
       color: this.event?.color ?? DEFAULT_COLOR,
+      colorSwatches: COLOR_SWATCHES,
       icon: this.event?.icon ?? ICON_CHOICES[0],
       iconChoices: ICON_CHOICES.map(value => ({ value, selected: value === (this.event?.icon ?? ICON_CHOICES[0]) })),
       visibility: this.event?.visibility ?? VISIBILITY.GM_ONLY,
@@ -113,6 +120,12 @@ export class EventEditorApp extends HandlebarsApplicationMixin(ApplicationV2) {
         height: 220
       }));
     }
+  }
+
+  /** Copy a swatch's colour into the colour input the form actually submits. */
+  static onPickColor(event, target) {
+    const input = this.element.querySelector('input[name="color"]');
+    if (input) input.value = target.dataset.color;
   }
 
   static async onSubmit(event, form, formData) {

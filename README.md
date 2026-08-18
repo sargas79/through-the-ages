@@ -4,8 +4,8 @@ A world-calendar and campaign-history module for **Foundry VTT v14 (build 366)**
 
 Through the Ages gives a world one shared, fully custom calendar; stores campaign
 notes as real Journal Entries; and adds a separate visual timeline of **Ages** and
-historical **events**. Everything is reachable from a single **Calendar** icon in
-the left-hand scene controls.
+historical **events**. Everything is reachable from a single **Calendar** button at
+the top of the **Journal** tab in the sidebar.
 
 The module is system-agnostic — it adds no game mechanics and works in any v14 world.
 
@@ -67,7 +67,9 @@ Then enable **Through the Ages** in *Game Settings → Manage Modules*.
 6. Optionally add **Ages**. Ages may not overlap; gaps are allowed but warned about.
 7. Save. The module creates the **Calendar Notes** journal folder at this point.
 
-The **Calendar** tool then appears in the left-hand scene controls for everyone.
+The **Calendar** button then appears at the top of the sidebar's **Journal** tab for
+everyone, next to the directory's own controls — the calendar's notes are journal
+documents, so both live in the same place.
 
 ---
 

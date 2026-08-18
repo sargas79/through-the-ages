@@ -1,7 +1,9 @@
 {{#if empty}}
-  <td class="tta-day tta-day-empty" aria-hidden="true"></td>
+  {{!-- A leading blank still occupies its column: hiding it would make the row
+        appear to have fewer columns than the grid does. --}}
+  <div class="tta-day-empty" role="gridcell" aria-label="{{localize "TTA.Calendar.NoDayInCell"}}"></div>
 {{else}}
-  <td class="tta-day {{#if isCurrent}}tta-day-current{{/if}} {{#if isSelected}}tta-day-selected{{/if}}">
+  <div class="tta-day {{#if isCurrent}}tta-day-current{{/if}} {{#if isSelected}}tta-day-selected{{/if}}" role="gridcell">
     <button type="button"
             class="tta-day-button"
             data-action="selectDay"
@@ -9,17 +11,11 @@
             aria-pressed="{{#if isSelected}}true{{else}}false{{/if}}"
             aria-label="{{label}}">
       <span class="tta-day-number">{{day}}</span>
-      <span class="tta-day-marks">
-        {{#if hasNotes}}
-          <span class="tta-mark tta-mark-note" data-tooltip="{{noteCount}}">
-            <i class="fa-solid fa-note-sticky" aria-hidden="true"></i><span class="tta-mark-count">{{noteCount}}</span>
-          </span>
-        {{/if}}
-        {{#if hasEvents}}
-          <span class="tta-mark tta-mark-event" data-tooltip="{{eventCount}}">
-            <i class="fa-solid fa-landmark-flag" aria-hidden="true"></i><span class="tta-mark-count">{{eventCount}}</span>
-          </span>
-        {{/if}}
+      {{!-- Up to three note dots then up to two event dots: the exact counts
+            live in the cell's aria-label, not in the marks. --}}
+      <span class="tta-day-marks" aria-hidden="true">
+        {{#each noteDots}}<span class="tta-dot-note"></span>{{/each}}
+        {{#each eventDots}}<span class="tta-dot-event"></span>{{/each}}
       </span>
       {{#if moons.length}}
         <span class="tta-day-moons" aria-hidden="true">
@@ -31,5 +27,5 @@
       {{/if}}
       {{#if isCurrent}}<span class="tta-sr-only">{{localize "TTA.Calendar.IsCurrentDay"}}</span>{{/if}}
     </button>
-  </td>
+  </div>
 {{/if}}

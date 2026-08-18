@@ -1,8 +1,8 @@
 /**
  * The visual timeline of Ages and historical events.
  *
- * Opened from the calendar window rather than from its own scene control, so
- * the module keeps a single left-hand icon. Browsing here is always local: no
+ * Opened from the calendar window rather than from its own sidebar control, so
+ * the module keeps a single entry point. Browsing here is always local: no
  * control in this window changes the shared campaign date.
  */
 
@@ -58,6 +58,7 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
       prev: TimelineApp.onPrev,
       next: TimelineApp.onNext,
       gotoCurrent: TimelineApp.onGotoCurrent,
+      gotoAge: TimelineApp.onGotoAge,
       addEvent: TimelineApp.onAddEvent,
       promoteFromNote: TimelineApp.onPromoteFromNote,
       editEvent: TimelineApp.onEditEvent,
@@ -107,10 +108,19 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
     events = this.#applyFilter(events);
     const decorated = await Promise.all(events.map(async event => this.#decorate(event, gm)));
+    // A year with nothing recorded in it is never listed, in any mode: the
+    // spine above already shows the shape of the span, so the list below only
+    // carries the years that actually hold events.
     const grouped = groupEventsByYear(decorated, years, current.year)
-      .filter(group => mode === TIMELINE_MODE.EXPANDED || group.events.length > 0);
+      .filter(group => group.events.length > 0);
+
+    const bands = this.#buildBands(age);
+    const ticks = this.#buildTicks(mode, calendar, current, age);
 
     return {
+      bands,
+      ticks,
+      scopeLabel: this.#scopeLabel(mode, age),
       isGM: gm,
       canManage: canManageEvents(),
       canView: canViewTimeline(),
@@ -138,6 +148,93 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
       filter: this.filter,
       filterChoices: this.#filterChoices(gm)
     };
+  }
+
+  /**
+   * The Age bands: one proportional block per visible Age. A band's share of
+   * the row is its duration over the whole span, floored so a very short Age
+   * stays wide enough to read.
+   */
+  #buildBands(viewAge) {
+    const ages = getVisibleAges();
+    const span = ages.reduce((total, age) => total + Number(age.durationYears), 0) || 1;
+    const currentId = getCurrentAge()?.id;
+    return ages.map(age => ({
+      id: age.id,
+      name: age.name,
+      color: age.color,
+      startYear: Number(age.startYear),
+      endYear: endYear(age),
+      yearCount: yearsInAge(age).length,
+      flex: Math.max(Number(age.durationYears) / span, 0.14).toFixed(4),
+      isCurrent: age.id === currentId,
+      isViewed: age.id === viewAge?.id
+    }));
+  }
+
+  /**
+   * Ticks along the spine, positioned as a percentage of the browsed span.
+   * A tick is drawn for the current position, for anything carrying an event,
+   * and otherwise only at a regular interval, so a long Age stays legible.
+   */
+  #buildTicks(mode, calendar, current, age) {
+    const ticks = [];
+
+    if (mode === TIMELINE_MODE.MONTH) {
+      const days = new Set(getEventsForMonth(this.viewYear, this.viewMonth).map(event => parseKey(event.dateKey)?.day));
+      const inCurrentMonth = this.viewYear === current.year && this.viewMonth === current.month;
+      for (let day = 1; day <= calendar.daysPerMonth; day++) {
+        const hasEvent = days.has(day);
+        ticks.push({
+          position: (((day - 0.5) / calendar.daysPerMonth) * 100).toFixed(3),
+          label: (day % 5 === 0 || hasEvent) ? day : "",
+          hasEvent,
+          isCurrent: inCurrentMonth && day === current.day
+        });
+      }
+      return ticks;
+    }
+
+    if (mode === TIMELINE_MODE.YEAR) {
+      const months = new Set(getEventsForYear(this.viewYear).map(event => parseKey(event.dateKey)?.month));
+      calendar.monthNames.forEach((name, index) => {
+        const month = index + 1;
+        ticks.push({
+          position: (((index + 0.5) / calendar.monthsPerYear) * 100).toFixed(3),
+          label: String(name).slice(0, 3),
+          hasEvent: months.has(month),
+          isCurrent: this.viewYear === current.year && month === current.month
+        });
+      });
+      return ticks;
+    }
+
+    if (!age) return ticks;
+
+    const years = new Set(getEventsForAge(age).map(event => parseKey(event.dateKey)?.year));
+    const start = Number(age.startYear);
+    const last = endYear(age);
+    const span = yearsInAge(age).length || 1;
+    for (let year = start; year <= last; year++) {
+      const hasEvent = years.has(year);
+      const isCurrent = year === current.year;
+      if (!(isCurrent || hasEvent || (year - start) % 5 === 0)) continue;
+      ticks.push({
+        position: (((year - start + 0.5) / span) * 100).toFixed(3),
+        label: (isCurrent || hasEvent || year % 20 === 0) ? year : "",
+        hasEvent,
+        isCurrent
+      });
+    }
+    return ticks;
+  }
+
+  /** What the toolbar names as the browsed scope, per mode. */
+  #scopeLabel(mode, age) {
+    if (mode === TIMELINE_MODE.MONTH) return formatMonth(this.viewYear, this.viewMonth);
+    if (mode === TIMELINE_MODE.YEAR) return `${t("TTA.Common.Year")} ${this.viewYear}`;
+    if (!age) return t("TTA.Ages.NoCurrentAge");
+    return `${age.name} · ${age.startYear}–${endYear(age)}`;
   }
 
   #filterChoices(gm) {
@@ -243,6 +340,14 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const current = getCurrentDate();
     this.viewYear = current.year;
     this.viewMonth = current.month;
+    this.render();
+  }
+
+  /** Jump the local view to the Age whose band was clicked. */
+  static onGotoAge(event, target) {
+    const year = Number(target.dataset.year);
+    if (!Number.isInteger(year)) return;
+    this.viewYear = year;
     this.render();
   }
 

@@ -27,8 +27,7 @@ const TEMPLATE_ROOT = `modules/${MODULE_ID}/templates`;
 const PARTIALS = [
   `${TEMPLATE_ROOT}/partials/calendar-day.hbs`,
   `${TEMPLATE_ROOT}/partials/note-list.hbs`,
-  `${TEMPLATE_ROOT}/partials/timeline-event.hbs`,
-  `${TEMPLATE_ROOT}/partials/age-header.hbs`
+  `${TEMPLATE_ROOT}/partials/timeline-event.hbs`
 ];
 
 /** Handlebars helpers used by the module templates. */

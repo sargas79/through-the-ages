@@ -1,6 +1,6 @@
 /**
- * The main calendar window: the single entry point reached from the Calendar
- * scene control.
+ * The main calendar window: the single entry point, reached from the Calendar
+ * button in the Journal sidebar.
  *
  * Browsing state (viewed month, selected day, active filter) is local to each
  * client. Only the GM time controls change the shared campaign date.
@@ -42,6 +42,7 @@ import {
   weekdayName
 } from "../services/date-service.js";
 import { describePhase } from "../services/moon-service.js";
+import { getFolder as getNotesFolder } from "../services/journal-service.js";
 import {
   deleteNote,
   filterNotes,
@@ -108,7 +109,8 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
       editNote: CalendarApp.onEditNote,
       deleteNote: CalendarApp.onDeleteNote,
       promoteNote: CalendarApp.onPromoteNote,
-      openJournal: CalendarApp.onOpenJournal
+      openJournal: CalendarApp.onOpenJournal,
+      openNotesFolder: CalendarApp.onOpenNotesFolder
     }
   };
 
@@ -152,6 +154,10 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
         empty: false,
         day: cell.day,
         moons: gridMoons.map(moon => describePhase(moon, absoluteDay)),
+        // The cell shows at most three note dots and two event dots; the exact
+        // counts stay in the cell's accessible label.
+        noteDots: new Array(Math.min(notes, 3)).fill(true),
+        eventDots: new Array(Math.min(events, 2)).fill(true),
         dateKey: dayKey(date.year, date.month, date.day),
         weekday: weekdayName(date, calendar),
         isCurrent: isSameDay(date, current),
@@ -223,6 +229,10 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
       })),
       canAddDayNote: scopes.includes(SCOPE.DAY),
       canAddMonthNote: scopes.includes(SCOPE.MONTH),
+      // Two player-facing refusals the panel states rather than hides: notes
+      // switched off by the GM, and no GM online to relay a write to.
+      playerNotesDisabled: !gm && scopes.length === 0,
+      noGMOnline: !gm && scopes.length > 0 && !game.users.some(user => user.isGM && user.active),
       showFilters: gm,
       filter: this.filter,
       filterChoices: getFilterChoices().map(choice => ({ ...choice, selected: choice.value === this.filter })),
@@ -428,5 +438,35 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const document = await fromUuid(target.dataset.uuid);
     if (!document) return ui.notifications.warn(t("TTA.Errors.NoteMissing"));
     document.parent?.sheet?.render(true, { pageId: document.id });
+  }
+
+  /**
+   * Reveal the Calendar Notes folder in Foundry's own journal directory:
+   * activate the tab, expand the folder if it is collapsed, and scroll it into
+   * view. The directory's markup differs between builds, so the folder is
+   * located and expanded through the DOM rather than through internal state.
+   */
+  static async onOpenNotesFolder() {
+    const folder = getNotesFolder();
+    const directory = ui.journal;
+
+    try {
+      if (directory?.activate) directory.activate();
+      else ui.sidebar?.changeTab?.("journal", "primary");
+    } catch (error) {
+      log("debug", "Could not activate the journal sidebar tab", error);
+    }
+
+    if (!folder) return ui.notifications.info(t("TTA.Errors.NoFolder"));
+
+    await directory?.render?.({ force: true });
+    const root = directory?.element instanceof HTMLElement ? directory.element : directory?.element?.[0];
+    const element = root?.querySelector(`.folder[data-folder-id="${folder.id}"], [data-folder-id="${folder.id}"]`);
+    if (!element) return;
+
+    if (element.classList.contains("collapsed")) {
+      element.querySelector(".folder-header, header, summary")?.click();
+    }
+    element.scrollIntoView({ block: "nearest" });
   }
 }

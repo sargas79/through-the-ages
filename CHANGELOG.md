@@ -4,6 +4,59 @@ All notable changes to Through the Ages are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **The calendar is opened from the Journal sidebar, not the scene controls.** A
+  **Calendar** button now sits at the top of the sidebar's Journal tab, where the
+  calendar's own notes are stored. The `getSceneControlButtons` registration and its
+  left-hand icon are gone.
+
+- **Interface redesign.** Every window is repainted from the Nocturne design system:
+  a dark indigo ground, the blurple accent with its full tonal ramp, outlined buttons
+  that tint rather than fill, tabular figures on every date and count, and 4/8/14px
+  radii throughout. The calendar header now carries the campaign date, clock, moon
+  chips and the GM time controls on one row; the month grid draws note and event
+  counts as dots instead of icons and labels; the detail panel lists notes as compact
+  rows marked by authorship, each showing its canonical date key. The timeline gains a
+  proportional row of Age bands and a tick spine above the event list. The calendar
+  window states its first-time setup case explicitly, and the world-time drift notice
+  is an amber strip across the top of the window.
+- **Timeline lists only years that hold events.** Expanded mode previously printed
+  every year of an Age, including empty ones. A year now appears once something is
+  recorded in it, and each event row carries its full date.
+- The Age header in the timeline was replaced by the band row, so the
+  `partials/age-header.hbs` template was removed.
+
+### Added
+
+- A **Journals ▸ Calendar Notes** link in the calendar's legend row, which reveals the
+  notes folder in Foundry's journal directory.
+- The event editor offers four colour swatches beside the colour input, and picks its
+  icon from a grid of the ten choices rather than a dropdown.
+- The detail panel states the two player-facing refusals rather than hiding them:
+  player notes switched off by the GM, and no GM online to relay a write to.
+
+### Fixed
+
+- **Content is always reachable.** Every window now lays out as a flex column with
+  one scrolling region, and the content host scrolls as a last resort, so nothing
+  can be clipped out of reach when a window is small or its content long: the
+  configuration body scrolls under a fixed Save footer, the month grid scrolls
+  sideways rather than crushing its cells in a world with many weekdays, the Age
+  band row scrolls past a readable floor, and the detail panel, timeline body and
+  long note bodies each carry their own scrollbar. Scrollbars are painted from the
+  module's palette rather than inheriting Foundry's.
+- Age bands were sized by the wrong element: the proportional `flex` was set on the
+  band button while its wrapping list item — the actual flex child of the row —
+  sized to its content, so every Age drew at roughly the same width regardless of
+  duration.
+- The calendar could refuse to reopen after being closed. A closed application can
+  linger in Foundry's instance registry under its id; `openCalendar` now re-renders
+  that instance instead of constructing a second one with the same id, which orphaned
+  the first and left the window unopenable until the world was reloaded.
+
 ## [1.2.0] - 2026-08-18
 
 ### Added

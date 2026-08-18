@@ -1,56 +1,63 @@
 /**
- * Hook wiring: the single Calendar scene control and the document listeners
- * that keep open windows in sync.
+ * Hook wiring: the Calendar entry point in the Journal sidebar and the document
+ * listeners that keep open windows in sync.
  */
 
-import { log, rerenderModuleApps } from "./compat.js";
+import { log, rerenderModuleApps, t } from "./compat.js";
 import { FLAGS, MODULE_ID } from "./constants.js";
 import { CalendarApp } from "./applications/calendar-app.js";
 import { onWorldTimeUpdated } from "./services/calendar-service.js";
 
-/** Open (or focus) the calendar window. */
+/**
+ * Open the calendar window, or focus it if it is already up.
+ *
+ * A closed application can linger in `foundry.applications.instances` under its
+ * id, so a stale entry is re-rendered rather than replaced: constructing a
+ * second CalendarApp with the same id would orphan the first and leave the
+ * window unopenable until the world reloads.
+ */
 export function openCalendar() {
   const existing = foundry.applications.instances?.get("tta-calendar");
-  if (existing instanceof CalendarApp && existing.element?.isConnected) {
-    existing.bringToFront?.();
-    return existing;
+  if (existing instanceof CalendarApp) {
+    if (existing.rendered && existing.element?.isConnected) {
+      existing.bringToFront?.();
+      return existing;
+    }
+    return existing.render({ force: true });
   }
   return new CalendarApp().render({ force: true });
 }
 
 /**
- * Register the module's only scene control.
+ * Put the Calendar button at the top of the Journal sidebar tab, beside the
+ * folder and entry controls, since calendar notes are journal documents.
  *
- * Foundry v13 changed `controls` from an array to a record; both shapes are
- * handled so the control appears regardless of the exact build.
+ * The sidebar is outside the module's own windows, so this is the one control
+ * the module paints beyond `.tta` — see `.tta-sidebar-button` in the stylesheet.
  */
-function onGetSceneControlButtons(controls) {
-  const tool = {
-    name: "calendar",
-    order: 1,
-    title: "TTA.Calendar.ControlTool",
-    icon: "fa-solid fa-calendar-days",
-    button: true,
-    visible: true,
-    onChange: () => openCalendar()
-  };
+function onRenderJournalDirectory(app, element) {
+  const root = element instanceof HTMLElement ? element : element?.[0];
+  if (!root || root.querySelector("[data-tta-open-calendar]")) return;
 
-  const control = {
-    name: MODULE_ID,
-    order: 100,
-    title: "TTA.Calendar.ControlGroup",
-    icon: "fa-solid fa-calendar-days",
-    visible: true,
-    activeTool: "calendar",
-    onChange: () => openCalendar(),
-    tools: { calendar: tool }
-  };
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "tta-sidebar-button";
+  button.dataset.ttaOpenCalendar = "";
+  button.append(Object.assign(document.createElement("i"), {
+    className: "fa-solid fa-calendar-days",
+    ariaHidden: "true"
+  }));
+  button.append(document.createTextNode(` ${t("TTA.Calendar.Title")}`));
+  button.addEventListener("click", () => openCalendar());
 
-  if (Array.isArray(controls)) {
-    controls.push({ ...control, layer: "controls", tools: [tool] });
-  } else {
-    controls[MODULE_ID] = control;
-  }
+  // Foundry's directory markup differs between builds, so the button is placed
+  // against whichever container is actually present.
+  const actions = root.querySelector(".header-actions, .action-buttons");
+  if (actions) return actions.append(button);
+
+  const header = root.querySelector(".directory-header, header");
+  if (header) return header.after(button);
+  root.prepend(button);
 }
 
 /** True when a document belongs to the module's calendar note storage. */
@@ -66,7 +73,7 @@ function onDocumentChanged(document) {
 }
 
 export function registerHooks() {
-  Hooks.on("getSceneControlButtons", onGetSceneControlButtons);
+  Hooks.on("renderJournalDirectory", onRenderJournalDirectory);
   Hooks.on("updateWorldTime", onWorldTimeUpdated);
 
   for (const event of ["createJournalEntry", "updateJournalEntry", "deleteJournalEntry"]) {
