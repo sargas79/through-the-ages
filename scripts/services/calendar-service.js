@@ -108,10 +108,7 @@ export async function setCurrentDateTime(date, time) {
   const target = isValidDate(date, calendar) ? date : clampDate(date, calendar);
   if (!isValidDate(date, calendar)) log("warn", "Requested date was out of range and has been clamped", date, target);
 
-  const targetTime = {
-    hour: Math.min(Math.max(0, Math.trunc(Number(time?.hour) || 0)), 23),
-    minute: Math.min(Math.max(0, Math.trunc(Number(time?.minute) || 0)), 59)
-  };
+  const targetTime = clampTime(time);
   const updated = { ...data, calendar: { ...calendar, currentDate: target, currentTime: targetTime } };
   await game.settings.set(MODULE_ID, SETTINGS.CALENDAR_DATA, updated);
   Hooks.callAll(`${MODULE_ID}.timeChanged`, { date: target, time: targetTime });
