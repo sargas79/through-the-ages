@@ -440,11 +440,33 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
     document.parent?.sheet?.render(true, { pageId: document.id });
   }
 
-  /** Reveal the Calendar Notes folder in Foundry's own journal directory. */
-  static onOpenNotesFolder() {
+  /**
+   * Reveal the Calendar Notes folder in Foundry's own journal directory:
+   * activate the tab, expand the folder if it is collapsed, and scroll it into
+   * view. The directory's markup differs between builds, so the folder is
+   * located and expanded through the DOM rather than through internal state.
+   */
+  static async onOpenNotesFolder() {
     const folder = getNotesFolder();
-    ui.journal?.activate?.();
+    const directory = ui.journal;
+
+    try {
+      if (directory?.activate) directory.activate();
+      else ui.sidebar?.changeTab?.("journal", "primary");
+    } catch (error) {
+      log("debug", "Could not activate the journal sidebar tab", error);
+    }
+
     if (!folder) return ui.notifications.info(t("TTA.Errors.NoFolder"));
-    ui.journal?.render?.(true);
+
+    await directory?.render?.({ force: true });
+    const root = directory?.element instanceof HTMLElement ? directory.element : directory?.element?.[0];
+    const element = root?.querySelector(`.folder[data-folder-id="${folder.id}"], [data-folder-id="${folder.id}"]`);
+    if (!element) return;
+
+    if (element.classList.contains("collapsed")) {
+      element.querySelector(".folder-header, header, summary")?.click();
+    }
+    element.scrollIntoView({ block: "nearest" });
   }
 }

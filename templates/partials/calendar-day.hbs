@@ -1,5 +1,7 @@
 {{#if empty}}
-  <div class="tta-day-empty" role="gridcell" aria-hidden="true"></div>
+  {{!-- A leading blank still occupies its column: hiding it would make the row
+        appear to have fewer columns than the grid does. --}}
+  <div class="tta-day-empty" role="gridcell" aria-label="{{localize "TTA.Calendar.NoDayInCell"}}"></div>
 {{else}}
   <div class="tta-day {{#if isCurrent}}tta-day-current{{/if}} {{#if isSelected}}tta-day-selected{{/if}}" role="gridcell">
     <button type="button"

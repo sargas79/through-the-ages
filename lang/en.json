@@ -41,6 +41,7 @@
       "NavLabel": "Calendar navigation",
       "NextMonth": "Next month",
       "NextYear": "Next year",
+      "NoDayInCell": "No day in this cell",
       "NotConfiguredGM": "This calendar has not been configured yet. Open the configuration window to set up months, weekdays and the starting date.",
       "NotConfiguredPlayer": "The Game Master has not finished setting up the calendar yet.",
       "NotesFolderName": "Calendar Notes",

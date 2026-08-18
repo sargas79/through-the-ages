@@ -92,13 +92,17 @@
 
         <div class="tta-grid-wrap">
           {{!-- The grid always has exactly as many columns as the world has
-                weekdays, however many that is. --}}
-          <div class="tta-grid-head" style="--tta-columns: {{weekdayNames.length}}" aria-hidden="true">
-            {{#each weekdayNames}}<div><abbr title="{{this}}">{{this}}</abbr></div>{{/each}}
-          </div>
-
+                weekdays, however many that is. The weekday names are the grid's
+                own header row rather than a separate strip, so they stay
+                column-aligned and are announced as the columns' headers. --}}
           <div class="tta-grid" style="--tta-columns: {{weekdayNames.length}}"
                role="grid" aria-label="{{localize "TTA.Calendar.GridCaption"}} {{viewLabel}}">
+            <div class="tta-grid-head" role="row">
+              {{#each weekdayNames}}
+                <div role="columnheader"><abbr title="{{this}}">{{this}}</abbr></div>
+              {{/each}}
+            </div>
+
             {{#each weeks}}
               <div class="tta-week" role="row">
                 {{#each this}}

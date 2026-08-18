@@ -531,7 +531,6 @@
 
 /* ---------- Month grid --------------------------------------------------- */
 
-.tta .tta-grid-head,
 .tta .tta-grid {
   display: grid;
   grid-template-columns: repeat(var(--tta-columns, 7), minmax(0, 1fr));
@@ -540,6 +539,11 @@
      to nothing, the grid keeps a usable column width and its wrapper scrolls. */
   min-width: calc(var(--tta-columns, 7) * 38px);
 }
+
+/* The header row and each week are rows semantically but lay their cells
+   straight into the one grid, so every column stays aligned. */
+.tta .tta-grid-head,
+.tta .tta-week { display: contents; }
 
 .tta .tta-grid-head > * {
   font-family: var(--tta-font-heading);
@@ -556,9 +560,6 @@
 }
 
 .tta .tta-grid-head abbr { text-decoration: none; border: none; }
-
-/* Each week is a row semantically but lays its cells straight into the grid. */
-.tta .tta-week { display: contents; }
 
 .tta .tta-month-head {
   display: flex;
