@@ -82,6 +82,48 @@ export function clampDate(date, calendar) {
   return { year, month, day };
 }
 
+/** True when `time` is an exact minute within a 24-hour day. */
+export function isValidTime(time) {
+  if (!time) return false;
+  const { hour, minute } = time;
+  return Number.isInteger(hour) && Number.isInteger(minute)
+    && hour >= 0 && hour < 24 && minute >= 0 && minute < 60;
+}
+
+/** Clamp an arbitrary value to a 24-hour, minute-precision clock time. */
+export function clampTime(time) {
+  const hour = Math.min(Math.max(0, Math.trunc(Number(time?.hour) || 0)), 23);
+  const minute = Math.min(Math.max(0, Math.trunc(Number(time?.minute) || 0)), 59);
+  return { hour, minute };
+}
+
+/** Advance a date and minute-precision time by a whole number of seconds. */
+export function addSeconds(date, time, seconds, calendar) {
+  const start = (time.hour * 3600) + (time.minute * 60);
+  const total = start + Math.trunc(seconds);
+  const dayDelta = Math.floor(total / 86400);
+  const secondOfDay = ((total % 86400) + 86400) % 86400;
+  const targetDate = addDays(date, dayDelta, calendar);
+
+  if (toAbsoluteDay(targetDate, calendar) === 0 && dayDelta < 0) {
+    return { date: targetDate, time: { hour: 0, minute: 0 } };
+  }
+
+  return {
+    date: targetDate,
+    time: {
+      hour: Math.floor(secondOfDay / 3600),
+      minute: Math.floor((secondOfDay % 3600) / 60)
+    }
+  };
+}
+
+/** Seconds until 07:00 on the following calendar day. */
+export function secondsUntilNextAdventureDay(time) {
+  const current = (time.hour * 3600) + (time.minute * 60);
+  return (86400 - current) + (7 * 3600);
+}
+
 /**
  * Convert a date to a zero-based absolute day index counted from Year 1, Month 1, Day 1.
  */

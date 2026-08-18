@@ -16,6 +16,9 @@ The module is system-agnostic — it adds no game mechanics and works in any v14
 - A custom calendar: months per year, days per month, month names, weekday names.
 - One authoritative campaign date, controlled only by GMs and synchronised to every
   connected client without a reload.
+- A shared 24-hour campaign clock with GM time presets that advance Foundry world
+   time through its public API, so installed systems and modules can process their
+   own time-based behaviour.
 - Journal-backed calendar notes, stored in a managed **Calendar Notes** folder using
   canonical numeric names (`YYYY-MM-DD`, and `YYYY-MM-00` for month notes).
 - Player notes that are private to their author and the GMs by default.
@@ -26,9 +29,9 @@ The module is system-agnostic — it adds no game mechanics and works in any v14
 
 ### Not in 1.0
 
-No real-world calendar conversion, moons, seasons, weather, holidays, time-of-day
-clock, recurring events, reminders, scene automation, third-party calendar
-integrations, or a separate sidebar tab.
+No real-world calendar conversion, moons, seasons, weather, holidays, recurring
+events, reminders, scene automation, third-party calendar integrations, or a
+separate sidebar tab.
 
 ---
 
@@ -67,10 +70,24 @@ The **Calendar** tool then appears in the left-hand scene controls for everyone.
 
 ### Changing campaign time
 
-The calendar header carries the GM-only time controls: previous/next day, *Advance*
-(any number of days, negative to rewind), *Set Date*, and *Current date* to jump the
-view back to today. Advancing rolls day → month → year correctly, and the date can
-never move earlier than Year 1, Month 1, Day 1.
+The calendar header shows the shared campaign date and 24-hour time. Its GM-only
+time menu advances by **1 minute**, **10 minutes**, **1 hour**, **10 hours**, **1 day
+(24 hours)**, **next adventure day (07:00 on the following calendar day)**, **1
+week**, or **1 configured calendar month**. Previous/next day controls remain
+available for corrections. Advancing rolls time, day, month, and year correctly, and
+the campaign can never move earlier than Year 1, Month 1, Day 1 at 00:00.
+
+Every module-controlled advance also calls Foundry's public world-time API with the
+same elapsed seconds. Through the Ages does not inspect or modify actor, item, or
+effect data: the active game system and other modules remain responsible for their
+own duration expiry and time-based automation. The **Set Date** form includes a time
+and confirms that moving time may affect those external systems.
+
+On upgrade, existing calendars gain a `00:00` clock while their current Foundry world
+time is preserved. If another source changes Foundry world time, Through the Ages
+keeps its calendar unchanged and warns GMs. Use **Use current Foundry time** to
+acknowledge that change before using its time controls again; this only establishes a
+new synchronization checkpoint and does not alter calendar data.
 
 Browsing months and years with the navigation arrows never changes the campaign date.
 
@@ -211,7 +228,8 @@ The public API is available at `game.modules.get("through-the-ages").api`.
 
 ## Compatibility
 
-Foundry VTT v14, minimum and verified build **14.366**. System-agnostic.
+Foundry VTT v14, minimum and verified build **14.366**. System-agnostic: this module
+uses only Foundry's public world-time API and has no game-system dependencies.
 
 ## Licence
 

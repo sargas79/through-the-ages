@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import {
   addDays,
   addMonths,
+  addSeconds,
   addYears,
   buildMonthGrid,
   clampDate,
@@ -11,12 +12,14 @@ import {
   dayKey,
   fromAbsoluteDay,
   isSameDay,
+  isValidTime,
   isValidDate,
   keyForScope,
   monthKey,
   monthName,
   parseKey,
   toAbsoluteDay,
+  secondsUntilNextAdventureDay,
   weekdayIndex,
   weekdayName
 } from "../scripts/services/date-service.js";
@@ -117,6 +120,34 @@ describe("time advancement", () => {
     let stepwise = { year: 1, month: 1, day: 1 };
     for (let i = 0; i < 400; i++) stepwise = addDays(stepwise, 1, CAL);
     assert.deepEqual(stepwise, addDays({ year: 1, month: 1, day: 1 }, 400, CAL));
+  });
+});
+
+describe("clock arithmetic", () => {
+  it("validates exact minute values", () => {
+    assert.ok(isValidTime({ hour: 0, minute: 0 }));
+    assert.ok(isValidTime({ hour: 23, minute: 59 }));
+    assert.ok(!isValidTime({ hour: 24, minute: 0 }));
+    assert.ok(!isValidTime({ hour: 12, minute: 60 }));
+  });
+
+  it("rolls time over into the next calendar day", () => {
+    assert.deepEqual(
+      addSeconds({ year: 1, month: 1, day: 36 }, { hour: 23, minute: 50 }, 600, CAL),
+      { date: { year: 1, month: 2, day: 1 }, time: { hour: 0, minute: 0 } }
+    );
+  });
+
+  it("clamps rewinding before the calendar origin to midnight", () => {
+    assert.deepEqual(
+      addSeconds({ year: 1, month: 1, day: 1 }, { hour: 0, minute: 5 }, -600, CAL),
+      { date: { year: 1, month: 1, day: 1 }, time: { hour: 0, minute: 0 } }
+    );
+  });
+
+  it("always targets 07:00 on the following day for an adventure day", () => {
+    assert.equal(secondsUntilNextAdventureDay({ hour: 6, minute: 30 }), 88200);
+    assert.equal(secondsUntilNextAdventureDay({ hour: 19, minute: 0 }), 43200);
   });
 });
 

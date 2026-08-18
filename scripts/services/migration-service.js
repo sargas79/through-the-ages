@@ -72,13 +72,18 @@ export function migrateCalendarData(data) {
     month: clampInt(rawDate?.month, 1, monthsPerYear, 1),
     day: clampInt(rawDate?.day, 1, daysPerMonth, 1)
   };
+  const rawTime = calendar.currentTime ?? defaults.currentTime;
+  const currentTime = {
+    hour: clampInt(rawTime?.hour, 0, 23, 0),
+    minute: clampInt(rawTime?.minute, 0, 59, 0)
+  };
 
   const ages = sortAges((Array.isArray(source.ages) ? source.ages : []).map((age, i) => normalizeAge(age, i)))
     .map((age, i) => ({ ...age, sortOrder: i }));
 
   return {
     schemaVersion: SCHEMA_VERSION,
-    calendar: { monthsPerYear, daysPerMonth, monthNames, weekdayNames, currentDate },
+    calendar: { monthsPerYear, daysPerMonth, monthNames, weekdayNames, currentDate, currentTime },
     ages
   };
 }
