@@ -11,7 +11,7 @@ import { onWorldTimeUpdated } from "./services/calendar-service.js";
 /** Open (or focus) the calendar window. */
 export function openCalendar() {
   const existing = foundry.applications.instances?.get("tta-calendar");
-  if (existing?.rendered) {
+  if (existing instanceof CalendarApp && existing.element?.isConnected) {
     existing.bringToFront?.();
     return existing;
   }
@@ -32,8 +32,7 @@ function onGetSceneControlButtons(controls) {
     icon: "fa-solid fa-calendar-days",
     button: true,
     visible: true,
-    onChange: () => openCalendar(),
-    onClick: () => openCalendar()
+    onChange: () => openCalendar()
   };
 
   const control = {
