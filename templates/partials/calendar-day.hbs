@@ -21,6 +21,14 @@
           </span>
         {{/if}}
       </span>
+      {{#if moons.length}}
+        <span class="tta-day-moons" aria-hidden="true">
+          {{#each moons}}
+            <span class="tta-moon-disc tta-moon-mini {{#if waxing}}tta-waxing{{else}}tta-waning{{/if}} {{#if gibbous}}tta-gibbous{{/if}}"
+                  style="--tta-moon-color: {{color}}; --tta-illumination: {{illumination}}; --tta-terminator: {{terminator}}"></span>
+          {{/each}}
+        </span>
+      {{/if}}
       {{#if isCurrent}}<span class="tta-sr-only">{{localize "TTA.Calendar.IsCurrentDay"}}</span>{{/if}}
     </button>
   </td>

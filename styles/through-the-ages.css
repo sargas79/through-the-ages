@@ -619,6 +619,119 @@
   border: 0;
 }
 
+/* --- Moons ---------------------------------------------------------------
+ * A phase disc is an unlit circle, half of it painted with the moon's colour,
+ * plus an elliptical terminator. `--tta-terminator` is the shadow's relative
+ * width (1 at new and full, 0 at the quarters) and `.tta-gibbous` flips that
+ * ellipse from dark to lit, which covers every phase with two pseudo-elements.
+ */
+.tta .tta-moon-disc {
+  position: relative;
+  display: inline-block;
+  flex: 0 0 auto;
+  width: var(--tta-moon-size, 1rem);
+  height: var(--tta-moon-size, 1rem);
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--tta-moon-unlit, rgba(20, 22, 28, 0.85));
+  border: 1px solid var(--tta-border);
+  vertical-align: middle;
+}
+
+/* The permanently lit half: right while waxing, left while waning. */
+.tta .tta-moon-disc::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--tta-moon-color, #c9d4e8);
+  clip-path: inset(0 0 0 50%);
+}
+
+.tta .tta-moon-disc.tta-waning::before { clip-path: inset(0 50% 0 0); }
+
+/* The terminator ellipse, dark for crescents and lit for gibbous phases. */
+.tta .tta-moon-disc::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: calc(var(--tta-terminator, 1) * 100%);
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: var(--tta-moon-unlit, rgba(20, 22, 28, 0.85));
+}
+
+.tta .tta-moon-disc.tta-gibbous::after { background: var(--tta-moon-color, #c9d4e8); }
+
+.tta .tta-moon-mini { --tta-moon-size: 0.55rem; border-width: 0; }
+
+/* Current phases beside the campaign date. */
+.tta .tta-moon-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tta .tta-moon-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--tta-muted);
+}
+
+/* Phases for the selected day, in the detail panel. */
+.tta .tta-moon-list { list-style: none; margin: 0 0 0.5rem; padding: 0; }
+
+.tta .tta-moon-list-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.2rem 0;
+}
+
+.tta .tta-moon-list-item .tta-moon-name { font-weight: 600; }
+.tta .tta-moon-list-item .tta-moon-phase { color: var(--tta-muted); margin-left: auto; }
+.tta .tta-moon-list-item.tta-moon-full .tta-moon-phase { color: var(--tta-text); font-weight: 600; }
+
+/* Discs inside day cells, below the note and event marks. */
+.tta .tta-day-moons {
+  display: flex;
+  justify-content: center;
+  gap: 0.15rem;
+  margin-top: 0.15rem;
+}
+
+/* Moon rows in the configuration window. */
+.tta .tta-moon-editor { list-style: none; margin: 0 0 var(--tta-gap); padding: 0; display: flex; flex-direction: column; gap: var(--tta-gap); }
+
+.tta .tta-moon-row {
+  border: 1px solid var(--tta-border);
+  border-left: 4px solid var(--tta-accent);
+  border-radius: var(--tta-radius);
+  background: var(--tta-surface);
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.tta .tta-moon-main { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--tta-gap); }
+.tta .tta-moon-main label { display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.85rem; }
+.tta .tta-moon-main label input[type="number"] { width: 6rem; }
+.tta .tta-moon-preview { --tta-moon-size: 1.6rem; display: flex; align-items: center; padding-bottom: 0.2rem; }
+.tta .tta-moon-footer { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tta-gap); }
+.tta .tta-moon-phase-label { margin: 0; font-size: 0.85rem; color: var(--tta-muted); }
+.tta .tta-moon-phase-label strong { color: var(--tta-text); margin-left: 0.25rem; }
+.tta .tta-moon-controls { margin-left: auto; display: flex; gap: 0.25rem; }
+
+/* Export and import controls. */
+.tta .tta-button-row { display: flex; flex-wrap: wrap; gap: var(--tta-gap); margin-top: var(--tta-gap); }
+
 /* Prompt dialogs opened from the calendar. */
 .tta-prompt { display: flex; flex-direction: column; gap: 0.35rem; }
 .tta-prompt-grid { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 0.4rem; }

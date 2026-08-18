@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { SCHEMA_VERSION } from "../scripts/constants.js";
+import { LIMITS, SCHEMA_VERSION } from "../scripts/constants.js";
 import {
   migrateCalendarData,
   migrateEvents,
+  migrateMoons,
   migrateNoteFlags,
   needsMigration,
   resizeNames
@@ -179,5 +180,70 @@ describe("migrateNoteFlags", () => {
   it("is idempotent", () => {
     const once = migrateNoteFlags({ dateKey: "0001-01-05", authorId: "u1", authorName: "Wrenn" });
     assert.deepEqual(migrateNoteFlags(once), once);
+  });
+});
+
+describe("migrateMoons", () => {
+  it("returns an empty list for missing or unusable data", () => {
+    assert.deepEqual(migrateMoons(undefined), []);
+    assert.deepEqual(migrateMoons(null), []);
+    assert.deepEqual(migrateMoons("nonsense"), []);
+    assert.deepEqual(migrateMoons([null, 3, "x"]), []);
+  });
+
+  it("normalises entries and re-indexes the sort order", () => {
+    const result = migrateMoons([
+      { id: "b", name: "Beta", cycleLength: 30, sortOrder: 5 },
+      { id: "a", name: "Alpha", cycleLength: 12, sortOrder: 1 }
+    ]);
+    assert.deepEqual(result.map(moon => moon.id), ["a", "b"]);
+    assert.deepEqual(result.map(moon => moon.sortOrder), [0, 1]);
+  });
+
+  it("caps the list at the supported maximum", () => {
+    const many = Array.from({ length: 25 }, (_, i) => ({ id: `m${i}`, name: `Moon ${i}`, sortOrder: i }));
+    assert.equal(migrateMoons(many).length, LIMITS.MOONS_MAX);
+  });
+
+  it("is idempotent", () => {
+    const once = migrateMoons([{ id: "a", name: "Alpha", cycleLength: 28, offset: 3 }]);
+    assert.deepEqual(migrateMoons(once), once);
+  });
+});
+
+describe("migrateCalendarData moons", () => {
+  it("defaults to no moons", () => {
+    assert.deepEqual(migrateCalendarData(undefined).calendar.moons, []);
+    assert.deepEqual(migrateCalendarData({ calendar: { monthsPerYear: 12 } }).calendar.moons, []);
+  });
+
+  it("preserves configured moons across a migration", () => {
+    const data = migrateCalendarData({
+      calendar: { moons: [{ id: "m1", name: "Selene", cycleLength: 28, offset: 4, phaseCount: 4 }] }
+    });
+    assert.equal(data.calendar.moons.length, 1);
+    assert.equal(data.calendar.moons[0].name, "Selene");
+    assert.equal(data.calendar.moons[0].offset, 4);
+    assert.equal(data.calendar.moons[0].phaseCount, 4);
+  });
+
+  it("upgrades schema 2 data, which had no moons, without loss", () => {
+    const legacy = {
+      schemaVersion: 2,
+      calendar: {
+        monthsPerYear: 12,
+        daysPerMonth: 30,
+        monthNames: Array.from({ length: 12 }, (_, i) => `M${i + 1}`),
+        weekdayNames: ["A", "B", "C", "D", "E", "F", "G"],
+        currentDate: { year: 3, month: 4, day: 5 },
+        currentTime: { hour: 8, minute: 15 }
+      },
+      ages: []
+    };
+    const migrated = migrateCalendarData(legacy);
+    assert.deepEqual(migrated.calendar.moons, []);
+    assert.deepEqual(migrated.calendar.currentDate, { year: 3, month: 4, day: 5 });
+    assert.deepEqual(migrated.calendar.currentTime, { hour: 8, minute: 15 });
+    assert.deepEqual(migrateCalendarData(migrated), migrated);
   });
 });

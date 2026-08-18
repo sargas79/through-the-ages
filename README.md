@@ -23,15 +23,20 @@ The module is system-agnostic — it adds no game mechanics and works in any v14
   canonical numeric names (`YYYY-MM-DD`, and `YYYY-MM-00` for month notes).
 - Player notes that are private to their author and the GMs by default.
 - **Ages**: named eras spanning a contiguous range of years, with overlap validation.
+- **Moons**: up to ten optional moons, each with its own cycle length, starting offset
+  and phase count, shown in the header, the day detail panel and the month grid.
+- **Export and import** of the calendar structure, moons, Ages and timeline events as
+  a portable JSON file.
 - A timeline window with three display densities: expanded, current year, current month.
 - GM promotion of any player note into a timeline event, without altering the note.
 - Full localisation; no player-facing string is hard-coded.
 
-### Not in 1.0
+### Not included
 
-No real-world calendar conversion, moons, seasons, weather, holidays, recurring
-events, reminders, scene automation, third-party calendar integrations, or a
-separate sidebar tab.
+No real-world calendar conversion, seasons, weather, holidays, recurring events,
+reminders, scene automation, third-party calendar integrations, or a separate
+sidebar tab. Moon phases are exposed through the API rather than driving any
+automation of their own.
 
 ---
 
@@ -104,6 +109,42 @@ Open the timeline with **Open Timeline**. *Add event* creates an event on an exa
 date, with a title, description, colour, icon, and player visibility. The three mode
 buttons switch the shared display density; only a GM can change it.
 
+### Moons
+
+Moons are configured in the **Moons** section of the configuration window and are
+off by default: a calendar with no moons behaves exactly as it did before.
+
+Each moon has:
+
+| Field | Meaning |
+|---|---|
+| Cycle (days) | Whole days for one complete cycle, from new moon to new moon. Independent of the month length, so phases drift across months. |
+| Offset (days) | How far into its cycle the moon already is on Year 1, Month 1, Day 1. Use it to put several moons out of step. |
+| Phases | How many named phases the cycle is divided into: 2, 4 or 8. |
+| Show in the month grid | Draws a small phase disc in every day cell. Turn it off for moons that only matter occasionally. |
+| Visible to players | Hidden moons appear only for GMs, exactly like a hidden Age. |
+
+A phase is centred on its exact point in the cycle, so a moon reads as full on the
+day nearest the true midpoint rather than on the day after it. The configuration
+row previews each moon's phase on the current campaign date as you edit it.
+
+### Exporting and importing
+
+The **Export and import** section of the configuration window writes the calendar
+structure, its moons and the Age list to a JSON file, optionally including the
+timeline events. Journal notes are never included — export those with Foundry's own
+journal tools.
+
+Importing loads the file into the configuration editor rather than writing it
+straight to the world: the GM reviews the result, sees the usual validation and
+structural warnings, and presses **Save** to apply it. Cancelling changes nothing.
+Staged timeline events replace the existing list only when the form is saved, and
+can be discarded first with **Discard staged events**.
+
+Files exported by a newer version of the module are refused rather than partially
+read. Older files are upgraded on import through the same migration used for stored
+data, and out-of-range values are clamped instead of failing.
+
 ### Promoting a player note
 
 On any day note, press **Create timeline event**. The form arrives prefilled with the
@@ -153,7 +194,7 @@ online the attempt is refused with a clear message rather than failing silently.
 
 | Data | Location |
 |---|---|
-| Calendar structure, current date, Ages | world setting `through-the-ages.calendarData` |
+| Calendar structure, current date, moons, Ages | world setting `through-the-ages.calendarData` |
 | Timeline events | world setting `through-the-ages.timelineEvents` |
 | Note text | Journal Entry Pages in the **Calendar Notes** folder |
 | Note metadata (date key, author, visibility) | page flags under `flags.through-the-ages` |
@@ -186,7 +227,8 @@ configuration window warns and asks for explicit confirmation when a change woul
 
 - reduce the months per year below a month already used by a note or event,
 - reduce the days per month below a day already used, or
-- change the weekday count, which relabels the weekday shown for every historical date.
+- change the weekday count, which relabels the weekday shown for every historical date, or
+- replace the timeline events with a set staged by an import.
 
 Dates are stored numerically, so shrinking the calendar leaves existing notes intact
 and retrievable — they simply fall outside the browsable grid until the calendar is

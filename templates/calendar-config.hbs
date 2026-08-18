@@ -68,6 +68,86 @@
   </fieldset>
 
   <fieldset class="tta-fieldset">
+    <legend>{{localize "TTA.Moons.Heading"}}</legend>
+    <p class="tta-hint">{{localize "TTA.Moons.Hint"}}</p>
+
+    {{#if hasMoons}}
+      <ol class="tta-moon-editor">
+        {{#each moons}}
+          <li class="tta-moon-row" data-moon-row data-moon-id="{{id}}" style="--tta-accent: {{color}}">
+            <div class="tta-moon-main">
+              <span class="tta-moon-preview" aria-hidden="true">
+                <span class="tta-moon-disc {{#if waxing}}tta-waxing{{else}}tta-waning{{/if}} {{#if gibbous}}tta-gibbous{{/if}}"
+                      style="--tta-moon-color: {{color}}; --tta-illumination: {{illumination}}; --tta-terminator: {{terminator}}"></span>
+              </span>
+              <label class="tta-grow">
+                <span>{{localize "TTA.Moons.Name"}}</span>
+                <input type="text" data-field="name" value="{{name}}">
+              </label>
+              <label>
+                <span>{{localize "TTA.Moons.CycleLength"}}</span>
+                <input type="number" data-field="cycleLength" min="2" max="1000" step="1" value="{{cycleLength}}">
+              </label>
+              <label>
+                <span>{{localize "TTA.Moons.Offset"}}</span>
+                <input type="number" data-field="offset" min="0" step="1" value="{{offset}}">
+              </label>
+              <label>
+                <span>{{localize "TTA.Moons.PhaseCount"}}</span>
+                <select data-field="phaseCount">
+                  {{#each phaseChoices}}
+                    <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+                  {{/each}}
+                </select>
+              </label>
+              <label class="tta-color">
+                <span>{{localize "TTA.Moons.Color"}}</span>
+                <input type="color" data-field="color" value="{{color}}">
+              </label>
+            </div>
+
+            <div class="tta-moon-footer">
+              <p class="tta-moon-phase-label">
+                <span>{{localize "TTA.Moons.PhaseToday"}}</span>
+                <strong>{{phaseLabel}}</strong>
+              </p>
+              <label class="tta-checkbox">
+                <input type="checkbox" data-field="showInGrid" {{#if showInGrid}}checked{{/if}}>
+                <span>{{localize "TTA.Moons.ShowInGrid"}}</span>
+              </label>
+              <label class="tta-checkbox">
+                <input type="checkbox" data-field="playerVisible" {{#if playerVisible}}checked{{/if}}>
+                <span>{{localize "TTA.Moons.PlayerVisible"}}</span>
+              </label>
+              <span class="tta-moon-controls">
+                <button type="button" data-action="moveMoonUp" data-tooltip="{{localize "TTA.Common.MoveUp"}}" aria-label="{{localize "TTA.Common.MoveUp"}}">
+                  <i class="fa-solid fa-arrow-up" aria-hidden="true"></i>
+                </button>
+                <button type="button" data-action="moveMoonDown" data-tooltip="{{localize "TTA.Common.MoveDown"}}" aria-label="{{localize "TTA.Common.MoveDown"}}">
+                  <i class="fa-solid fa-arrow-down" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="tta-danger" data-action="removeMoon">
+                  <i class="fa-solid fa-trash" aria-hidden="true"></i> {{localize "TTA.Common.Remove"}}
+                </button>
+              </span>
+            </div>
+          </li>
+        {{/each}}
+      </ol>
+    {{else}}
+      <p class="tta-empty">{{localize "TTA.Moons.NoMoons"}}</p>
+    {{/if}}
+
+    {{#if canAddMoon}}
+      <button type="button" class="tta-secondary" data-action="addMoon">
+        <i class="fa-solid fa-moon" aria-hidden="true"></i> {{localize "TTA.Moons.AddMoon"}}
+      </button>
+    {{else}}
+      <p class="tta-hint">{{localize "TTA.Moons.LimitHint" max=moonsMax}}</p>
+    {{/if}}
+  </fieldset>
+
+  <fieldset class="tta-fieldset">
     <legend>{{localize "TTA.Config.CurrentDateHeading"}}</legend>
     <div class="tta-field-row">
       <label for="tta-current-year">{{localize "TTA.Common.Year"}}</label>
@@ -164,6 +244,33 @@
     <button type="button" class="tta-secondary" data-action="repairFolder">
       <i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> {{localize "TTA.Config.RepairFolder"}}
     </button>
+  </fieldset>
+
+  <fieldset class="tta-fieldset">
+    <legend>{{localize "TTA.Import.Heading"}}</legend>
+    <p class="tta-hint">{{localize "TTA.Import.Hint"}}</p>
+
+    {{#if hasPendingImport}}
+      <p class="tta-banner tta-banner-warning">
+        <i class="fa-solid fa-file-import" aria-hidden="true"></i>
+        {{localize "TTA.Import.PendingEvents"}} ({{pendingEventCount}})
+        <button type="button" data-action="discardImport">{{localize "TTA.Import.DiscardEvents"}}</button>
+      </p>
+    {{/if}}
+
+    <label class="tta-checkbox">
+      <input type="checkbox" data-export-events checked>
+      <span>{{localize "TTA.Import.IncludeEvents"}}</span>
+    </label>
+
+    <div class="tta-button-row">
+      <button type="button" class="tta-secondary" data-action="exportCalendar">
+        <i class="fa-solid fa-file-export" aria-hidden="true"></i> {{localize "TTA.Import.Export"}}
+      </button>
+      <button type="button" class="tta-secondary" data-action="importCalendar">
+        <i class="fa-solid fa-file-import" aria-hidden="true"></i> {{localize "TTA.Import.Import"}}
+      </button>
+    </div>
   </fieldset>
 </div>
 

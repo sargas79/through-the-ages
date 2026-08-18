@@ -6,7 +6,7 @@
 
 export const MODULE_ID = "through-the-ages";
 export const MODULE_TITLE = "Through the Ages";
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export const SOCKET_EVENT = `module.${MODULE_ID}`;
 
@@ -82,7 +82,29 @@ export const LIMITS = {
   WEEKDAYS_MIN: 1,
   WEEKDAYS_MAX: 14,
   YEAR_MIN: 1,
-  AGE_DURATION_MIN: 1
+  AGE_DURATION_MIN: 1,
+  MOONS_MAX: 10,
+  MOON_CYCLE_MIN: 2,
+  MOON_CYCLE_MAX: 1000
+};
+
+/** Named phase counts a moon may be divided into. */
+export const MOON_PHASE_COUNTS = [2, 4, 8];
+
+/** Default number of named phases for a newly added moon. */
+export const DEFAULT_MOON_PHASE_COUNT = 8;
+
+/**
+ * Phase name keys, ordered from new moon through the full cycle. The 2- and
+ * 4-phase sets are strict subsets, so every moon uses the same vocabulary.
+ */
+export const MOON_PHASE_KEYS = {
+  2: ["New", "Full"],
+  4: ["New", "FirstQuarter", "Full", "LastQuarter"],
+  8: [
+    "New", "WaxingCrescent", "FirstQuarter", "WaxingGibbous",
+    "Full", "WaningGibbous", "LastQuarter", "WaningCrescent"
+  ]
 };
 
 /** Fallback labels used when generating or padding name lists. */
@@ -104,10 +126,24 @@ export const DEFAULT_CALENDAR_DATA = {
     monthNames: [...DEFAULT_MONTH_NAMES],
     weekdayNames: [...DEFAULT_WEEKDAY_NAMES],
     currentDate: { year: 1, month: 1, day: 1 },
-    currentTime: { hour: 0, minute: 0 }
+    currentTime: { hour: 0, minute: 0 },
+    moons: []
   },
   ages: []
 };
 
 /** Default accent colour applied to Ages and events that define none. */
 export const DEFAULT_COLOR = "#8f3d2e";
+
+/** Default accent colour applied to moons that define none. */
+export const DEFAULT_MOON_COLOR = "#c9d4e8";
+
+/** Fallback names used when adding or normalising moons. */
+export const DEFAULT_MOON_NAMES = [
+  "Selene", "Verrick", "Ilmara", "Kethis", "Dunmoor",
+  "Ashryn", "Torvald", "Nyx", "Calder", "Wisp"
+];
+
+/** Envelope identifiers for exported calendar files. */
+export const EXPORT_FORMAT = "through-the-ages-calendar";
+export const EXPORT_FORMAT_VERSION = 1;

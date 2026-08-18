@@ -13,6 +13,19 @@
       {{else}}
         <p class="tta-current-age tta-muted">{{localize "TTA.Ages.NoCurrentAge"}}</p>
       {{/if}}
+      {{#if currentMoons.length}}
+        <ul class="tta-moon-strip" aria-label="{{localize "TTA.Moons.CurrentPhases"}}">
+          {{#each currentMoons}}
+            <li class="tta-moon-item" data-tooltip="{{name}}: {{phaseLabel}}">
+              <span class="tta-moon-disc {{#if waxing}}tta-waxing{{else}}tta-waning{{/if}} {{#if gibbous}}tta-gibbous{{/if}}"
+                    style="--tta-moon-color: {{color}}; --tta-illumination: {{illumination}}; --tta-terminator: {{terminator}}"
+                    aria-hidden="true"></span>
+              <span class="tta-moon-name">{{name}}</span>
+              <span class="tta-sr-only">{{phaseLabel}}</span>
+            </li>
+          {{/each}}
+        </ul>
+      {{/if}}
     </div>
 
     <div class="tta-header-actions">
@@ -141,6 +154,21 @@
               {{/each}}
             </select>
           </label>
+        {{/if}}
+
+        {{#if selectedMoons.length}}
+          <h4 class="tta-subhead">{{localize "TTA.Moons.PhasesOnDay"}}</h4>
+          <ul class="tta-moon-list">
+            {{#each selectedMoons}}
+              <li class="tta-moon-list-item {{#if isFull}}tta-moon-full{{/if}}">
+                <span class="tta-moon-disc {{#if waxing}}tta-waxing{{else}}tta-waning{{/if}} {{#if gibbous}}tta-gibbous{{/if}}"
+                      style="--tta-moon-color: {{color}}; --tta-illumination: {{illumination}}; --tta-terminator: {{terminator}}"
+                      aria-hidden="true"></span>
+                <span class="tta-moon-name">{{name}}</span>
+                <span class="tta-moon-phase">{{phaseLabel}}</span>
+              </li>
+            {{/each}}
+          </ul>
         {{/if}}
 
         {{#if dayEvents.length}}

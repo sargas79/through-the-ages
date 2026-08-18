@@ -82,6 +82,23 @@ export async function createEvent(data) {
   return event;
 }
 
+/**
+ * Replace the whole event list. GM only.
+ *
+ * Used by the calendar import, which restores a self-contained event set;
+ * every other caller should go through the single-event helpers.
+ */
+export async function replaceEvents(events) {
+  if (!canManageEvents()) {
+    ui.notifications.warn(t("TTA.Errors.EventGMOnly"));
+    return null;
+  }
+  for (const event of events) assertValid(event);
+  const written = await writeEvents(events);
+  log("debug", `Replaced timeline events with ${written.length} imported records`);
+  return written;
+}
+
 /** Update an event. GM only. */
 export async function updateEvent(eventId, changes) {
   if (!canManageEvents()) {

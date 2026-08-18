@@ -4,6 +4,35 @@ All notable changes to Through the Ages are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-08-18
+
+### Added
+
+- **Moons.** Up to ten optional moons can be added to the calendar, each with its own
+  cycle length in whole days, starting offset, phase count (2, 4 or 8), colour, and
+  per-moon toggles for month-grid display and player visibility. Phases appear beside
+  the current date, in the selected day's detail panel, and as small discs in the month
+  grid. The default remains no moons, so existing worlds are unchanged.
+- **Calendar export and import.** The configuration window can write the calendar
+  structure, its moons, the Ages and optionally the timeline events to a JSON file, and
+  load one back. Imports are staged in the configuration editor for review and are
+  applied only when the GM saves; nothing is written to the world before that.
+- API additions: `getMoons`, `getVisibleMoons`, `getMoonPhases`, `exportCalendar`,
+  `downloadCalendarExport`, `parseCalendarImport`, `importCalendar`, and the pure
+  helpers `utils.phaseIndex`, `utils.phaseKey`, `utils.illumination` and
+  `utils.daysUntilPhase`.
+
+### Changed
+
+- Stored data schema raised to version 3. The migration is additive: worlds without
+  moons gain an empty moon list on first load and are otherwise untouched.
+
+### Fixed
+
+- Saving the calendar configuration no longer resets the campaign clock to 00:00. The
+  configuration form did not carry the current time through, so migration refilled it
+  with the default.
+
 ## [1.1.1] - 2026-08-18
 
 ### Fixed
