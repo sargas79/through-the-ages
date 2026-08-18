@@ -1,0 +1,86 @@
+<div class="tta-form-body">
+
+  {{#if isPromotion}}
+    <div class="tta-banner tta-banner-info">
+      <h4><i class="fa-solid fa-arrow-up-right-dots" aria-hidden="true"></i> {{localize "TTA.EventEditor.PromoteHeading"}}</h4>
+      <p>{{localize "TTA.EventEditor.PromoteBody" }}</p>
+      <p class="tta-source-note">
+        <strong>{{sourceNote.title}}</strong> — {{sourceNote.authorName}}
+      </p>
+      {{#if sourceExcerpt}}
+        <blockquote class="tta-source-excerpt">{{sourceExcerpt}}</blockquote>
+      {{/if}}
+    </div>
+  {{/if}}
+
+  <div class="tta-field-row tta-field-stack">
+    <label for="tta-event-title">{{localize "TTA.EventEditor.TitleField"}}</label>
+    <input id="tta-event-title" type="text" name="title" value="{{title}}" required
+           placeholder="{{localize "TTA.EventEditor.TitlePlaceholder"}}">
+  </div>
+
+  <fieldset class="tta-fieldset tta-date-fieldset">
+    <legend>{{localize "TTA.EventEditor.DateHeading"}}</legend>
+    <div class="tta-field-inline">
+      <label>
+        <span>{{localize "TTA.Common.Year"}}</span>
+        <input type="number" name="year" min="1" step="1" value="{{year}}" required>
+      </label>
+      <label>
+        <span>{{localize "TTA.Common.Month"}}</span>
+        <select name="month">
+          {{#each monthChoices}}
+            <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </label>
+      <label>
+        <span>{{localize "TTA.Common.Day"}}</span>
+        <input type="number" name="day" min="1" max="{{maxDay}}" step="1" value="{{day}}" required>
+      </label>
+    </div>
+  </fieldset>
+
+  <div class="tta-field-inline">
+    <label>
+      <span>{{localize "TTA.EventEditor.VisibilityField"}}</span>
+      <select name="visibility">
+        {{#each visibilityChoices}}
+          <option value="{{value}}" {{#if (ttaEq value ../visibility)}}selected{{/if}}>{{label}}</option>
+        {{/each}}
+      </select>
+    </label>
+    <label>
+      <span>{{localize "TTA.EventEditor.IconField"}}</span>
+      <select name="icon">
+        {{#each iconChoices}}
+          <option value="{{value}}" {{#if selected}}selected{{/if}}>{{value}}</option>
+        {{/each}}
+      </select>
+    </label>
+    <label class="tta-color">
+      <span>{{localize "TTA.EventEditor.ColorField"}}</span>
+      <input type="color" name="color" value="{{color}}">
+    </label>
+  </div>
+
+  {{#if isPromotion}}
+    <label class="tta-checkbox">
+      <input type="checkbox" name="shareNote">
+      <span>{{localize "TTA.EventEditor.ShareSourceNote"}}</span>
+    </label>
+    <p class="tta-hint">{{localize "TTA.EventEditor.ShareSourceHint"}}</p>
+  {{/if}}
+
+  <div class="tta-field-row tta-field-stack">
+    <span class="tta-label">{{localize "TTA.EventEditor.DescriptionField"}}</span>
+    <div data-editor-host class="tta-editor-host"></div>
+  </div>
+</div>
+
+<footer class="tta-form-footer">
+  <button type="submit" class="tta-primary">
+    <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+    {{#if event}}{{localize "TTA.Common.SaveChanges"}}{{else}}{{localize "TTA.EventEditor.Create"}}{{/if}}
+  </button>
+</footer>

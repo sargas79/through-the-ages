@@ -1,0 +1,11 @@
+{
+  "name": "through-the-ages",
+  "version": "1.0.0",
+  "description": "Foundry VTT world calendar and campaign timeline module.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/"
+  },
+  "license": "MIT"
+}

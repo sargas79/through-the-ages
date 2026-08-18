@@ -1,0 +1,174 @@
+<section class="tta-layout">
+
+  <header class="tta-header">
+    <div class="tta-header-date">
+      <span class="tta-eyebrow">{{localize "TTA.Calendar.CurrentDate"}}</span>
+      <h2 class="tta-current-date">{{currentDateLabel}}</h2>
+      {{#if currentAge}}
+        <p class="tta-current-age" style="--tta-accent: {{currentAge.color}}">
+          <i class="fa-solid fa-hourglass-half" aria-hidden="true"></i>
+          <strong>{{currentAge.name}}</strong>
+          <span class="tta-range">{{localize "TTA.Common.YearRange"}} {{currentAge.startYear}}&ndash;{{currentAge.endYear}}</span>
+        </p>
+      {{else}}
+        <p class="tta-current-age tta-muted">{{localize "TTA.Ages.NoCurrentAge"}}</p>
+      {{/if}}
+    </div>
+
+    <div class="tta-header-actions">
+      {{#if canChangeTime}}
+        <div class="tta-time-controls" role="group" aria-label="{{localize "TTA.Time.ControlsLabel"}}">
+          <button type="button" data-action="prevDay" data-tooltip="{{localize "TTA.Time.PrevDay"}}" aria-label="{{localize "TTA.Time.PrevDay"}}">
+            <i class="fa-solid fa-backward-step" aria-hidden="true"></i>
+          </button>
+          <button type="button" data-action="nextDay" data-tooltip="{{localize "TTA.Time.NextDay"}}" aria-label="{{localize "TTA.Time.NextDay"}}">
+            <i class="fa-solid fa-forward-step" aria-hidden="true"></i>
+          </button>
+          <button type="button" data-action="advanceDays">
+            <i class="fa-solid fa-forward" aria-hidden="true"></i> {{localize "TTA.Time.Advance"}}
+          </button>
+          <button type="button" data-action="setDate">
+            <i class="fa-solid fa-calendar-check" aria-hidden="true"></i> {{localize "TTA.Time.SetDate"}}
+          </button>
+        </div>
+      {{/if}}
+
+      <div class="tta-header-links">
+        {{#if canViewTimeline}}
+          <button type="button" data-action="openTimeline">
+            <i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> {{localize "TTA.Timeline.Open"}}
+          </button>
+        {{/if}}
+        {{#if canConfigure}}
+          <button type="button" data-action="openConfig">
+            <i class="fa-solid fa-gears" aria-hidden="true"></i> {{localize "TTA.Config.Open"}}
+          </button>
+        {{/if}}
+      </div>
+    </div>
+  </header>
+
+  {{#unless configured}}
+    <p class="tta-banner tta-banner-warning">
+      <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+      {{#if canConfigure}}{{localize "TTA.Calendar.NotConfiguredGM"}}{{else}}{{localize "TTA.Calendar.NotConfiguredPlayer"}}{{/if}}
+    </p>
+  {{/unless}}
+
+  <div class="tta-main">
+    <div class="tta-grid-panel">
+
+      <nav class="tta-nav" aria-label="{{localize "TTA.Calendar.NavLabel"}}">
+        <button type="button" data-action="prevYear" data-tooltip="{{localize "TTA.Calendar.PrevYear"}}" aria-label="{{localize "TTA.Calendar.PrevYear"}}">
+          <i class="fa-solid fa-angles-left" aria-hidden="true"></i>
+        </button>
+        <button type="button" data-action="prevMonth" data-tooltip="{{localize "TTA.Calendar.PrevMonth"}}" aria-label="{{localize "TTA.Calendar.PrevMonth"}}">
+          <i class="fa-solid fa-angle-left" aria-hidden="true"></i>
+        </button>
+
+        <h3 class="tta-view-label">
+          {{viewLabel}}
+          {{#if viewAge}}<span class="tta-view-age" style="--tta-accent: {{viewAge.color}}">{{viewAge.name}}</span>{{/if}}
+        </h3>
+
+        <button type="button" data-action="nextMonth" data-tooltip="{{localize "TTA.Calendar.NextMonth"}}" aria-label="{{localize "TTA.Calendar.NextMonth"}}">
+          <i class="fa-solid fa-angle-right" aria-hidden="true"></i>
+        </button>
+        <button type="button" data-action="nextYear" data-tooltip="{{localize "TTA.Calendar.NextYear"}}" aria-label="{{localize "TTA.Calendar.NextYear"}}">
+          <i class="fa-solid fa-angles-right" aria-hidden="true"></i>
+        </button>
+        <button type="button" data-action="gotoCurrent" class="tta-today {{#if viewingCurrentMonth}}tta-is-current{{/if}}">
+          <i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i> {{localize "TTA.Calendar.Today"}}
+        </button>
+      </nav>
+
+      <div class="tta-grid-wrap">
+        <table class="tta-grid" style="--tta-columns: {{calendar.weekdayNames.length}}">
+          <caption class="tta-sr-only">{{localize "TTA.Calendar.GridCaption"}} {{viewLabel}}</caption>
+          <thead>
+            <tr>
+              {{#each weekdayNames}}<th scope="col"><abbr title="{{this}}">{{this}}</abbr></th>{{/each}}
+            </tr>
+          </thead>
+          <tbody>
+            {{#each weeks}}
+              <tr>
+                {{#each this}}
+                  {{> "modules/through-the-ages/templates/partials/calendar-day.hbs"}}
+                {{/each}}
+              </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="tta-legend" aria-hidden="false">
+        <span><i class="fa-solid fa-note-sticky" aria-hidden="true"></i> {{localize "TTA.Calendar.LegendNotes"}}</span>
+        <span><i class="fa-solid fa-landmark-flag" aria-hidden="true"></i> {{localize "TTA.Calendar.LegendEvents"}}</span>
+        <span class="tta-legend-current">{{localize "TTA.Calendar.LegendToday"}}</span>
+      </div>
+    </div>
+
+    <aside class="tta-detail" aria-label="{{localize "TTA.Calendar.DetailLabel"}}">
+
+      <section class="tta-detail-block">
+        <header class="tta-detail-header">
+          <h3>{{selectedLabel}}</h3>
+          {{#if canAddDayNote}}
+            <button type="button" data-action="addDayNote">
+              <i class="fa-solid fa-plus" aria-hidden="true"></i> {{localize "TTA.Notes.AddDay"}}
+            </button>
+          {{/if}}
+        </header>
+
+        {{#if showFilters}}
+          <label class="tta-filter">
+            <span>{{localize "TTA.Filters.Label"}}</span>
+            <select data-filter-select>
+              {{#each filterChoices}}
+                <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+              {{/each}}
+            </select>
+          </label>
+        {{/if}}
+
+        {{#if dayEvents.length}}
+          <h4 class="tta-subhead">{{localize "TTA.Timeline.EventsOnDay"}}</h4>
+          <ul class="tta-event-chips">
+            {{#each dayEvents}}
+              <li class="tta-event-chip" style="--tta-accent: {{color}}">
+                <i class="{{icon}}" aria-hidden="true"></i> {{title}}
+              </li>
+            {{/each}}
+          </ul>
+        {{/if}}
+
+        <h4 class="tta-subhead">{{localize "TTA.Notes.DayNotes"}}</h4>
+        {{> "modules/through-the-ages/templates/partials/note-list.hbs" notes=dayNotes canPromote=canPromote emptyLabel=(localize "TTA.Notes.NoDayNotes")}}
+      </section>
+
+      <section class="tta-detail-block">
+        <header class="tta-detail-header">
+          <h3>{{viewLabel}}</h3>
+          {{#if canAddMonthNote}}
+            <button type="button" data-action="addMonthNote">
+              <i class="fa-solid fa-plus" aria-hidden="true"></i> {{localize "TTA.Notes.AddMonth"}}
+            </button>
+          {{/if}}
+        </header>
+
+        <p class="tta-muted tta-month-summary">
+          {{localize "TTA.Timeline.MonthEventCount"}}: {{monthEvents.length}}
+        </p>
+
+        <h4 class="tta-subhead">{{localize "TTA.Notes.MonthNotes"}}</h4>
+        {{> "modules/through-the-ages/templates/partials/note-list.hbs" notes=monthNotes canPromote=false emptyLabel=(localize "TTA.Notes.NoMonthNotes")}}
+      </section>
+    </aside>
+  </div>
+
+  <footer class="tta-footer">
+    <span class="tta-muted">{{localize "TTA.Calendar.FooterHint"}}</span>
+    {{#if moduleVersion}}<span class="tta-version">v{{moduleVersion}}</span>{{/if}}
+  </footer>
+</section>

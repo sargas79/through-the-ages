@@ -1,0 +1,93 @@
+<section class="tta-layout tta-timeline-layout">
+
+  <header class="tta-timeline-toolbar">
+    <div class="tta-mode-switch" role="group" aria-label="{{localize "TTA.Timeline.ModeLabel"}}">
+      {{#each modes}}
+        <button type="button"
+                data-action="setMode"
+                data-mode="{{value}}"
+                class="tta-mode {{#if active}}tta-mode-active{{/if}}"
+                aria-pressed="{{#if active}}true{{else}}false{{/if}}"
+                {{#unless @root.isGM}}disabled data-tooltip="{{localize "TTA.Errors.ModeGMOnly"}}"{{/unless}}>
+          {{label}}
+        </button>
+      {{/each}}
+    </div>
+
+    <nav class="tta-timeline-nav" aria-label="{{localize "TTA.Timeline.NavLabel"}}">
+      <button type="button" data-action="prev" data-tooltip="{{localize "TTA.Timeline.Previous"}}" aria-label="{{localize "TTA.Timeline.Previous"}}">
+        <i class="fa-solid fa-angle-left" aria-hidden="true"></i>
+      </button>
+      <span class="tta-timeline-position">
+        {{#if isMonthMode}}{{viewMonthLabel}}{{else}}{{localize "TTA.Common.Year"}} {{viewYear}}{{/if}}
+      </span>
+      <button type="button" data-action="next" data-tooltip="{{localize "TTA.Timeline.Next"}}" aria-label="{{localize "TTA.Timeline.Next"}}">
+        <i class="fa-solid fa-angle-right" aria-hidden="true"></i>
+      </button>
+      <button type="button" data-action="gotoCurrent">
+        <i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i> {{localize "TTA.Timeline.JumpToCurrent"}}
+      </button>
+    </nav>
+
+    <div class="tta-timeline-tools">
+      <label class="tta-filter">
+        <span class="tta-sr-only">{{localize "TTA.Filters.Label"}}</span>
+        <select data-filter-select aria-label="{{localize "TTA.Filters.Label"}}">
+          {{#each filterChoices}}
+            <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </label>
+      {{#if canManage}}
+        <button type="button" data-action="addEvent">
+          <i class="fa-solid fa-plus" aria-hidden="true"></i> {{localize "TTA.Timeline.AddEvent"}}
+        </button>
+        <button type="button" data-action="promoteFromNote">
+          <i class="fa-solid fa-arrow-up-right-dots" aria-hidden="true"></i> {{localize "TTA.Timeline.FromNote"}}
+        </button>
+      {{/if}}
+    </div>
+  </header>
+
+  <p class="tta-timeline-context">
+    <i class="fa-solid fa-clock" aria-hidden="true"></i>
+    {{localize "TTA.Calendar.CurrentDate"}}: <strong>{{currentDateLabel}}</strong>
+    <span class="tta-muted">— {{localize "TTA.Timeline.BrowsingHint"}}</span>
+  </p>
+
+  <div class="tta-timeline-body">
+    {{#if hasAge}}
+      {{> "modules/through-the-ages/templates/partials/age-header.hbs" age=age}}
+    {{else}}
+      <p class="tta-banner">{{localize "TTA.Ages.NoCurrentAge"}}</p>
+    {{/if}}
+
+    {{#if isEmpty}}
+      <p class="tta-empty">{{localize "TTA.Timeline.NoEvents"}}</p>
+    {{else}}
+      <ol class="tta-year-list">
+        {{#each groups}}
+          <li class="tta-year {{#if isCurrent}}tta-year-current{{/if}}">
+            <h4 class="tta-year-label">
+              {{localize "TTA.Common.Year"}} {{year}}
+              {{#if isCurrent}}<span class="tta-badge tta-badge-current">{{localize "TTA.Timeline.CurrentYear"}}</span>{{/if}}
+            </h4>
+            {{#if events.length}}
+              <ul class="tta-event-list">
+                {{#each events}}
+                  {{> "modules/through-the-ages/templates/partials/timeline-event.hbs"}}
+                {{/each}}
+              </ul>
+            {{else}}
+              <p class="tta-empty tta-empty-inline">{{localize "TTA.Timeline.NoEventsThisYear"}}</p>
+            {{/if}}
+          </li>
+        {{/each}}
+      </ol>
+    {{/if}}
+  </div>
+
+  <footer class="tta-footer">
+    <span class="tta-muted">{{localize "TTA.Timeline.EventCount"}}: {{eventCount}}</span>
+  </footer>
+</section>

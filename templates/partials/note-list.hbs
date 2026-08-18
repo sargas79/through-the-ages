@@ -1,0 +1,53 @@
+{{#if notes.length}}
+  <ul class="tta-note-list">
+    {{#each notes}}
+      <li class="tta-note tta-note-{{visibility}}">
+        <header class="tta-note-header">
+          <h5 class="tta-note-title">{{title}}</h5>
+          <span class="tta-note-badges">
+            <span class="tta-badge tta-badge-{{visibility}}" data-tooltip="{{visibilityLabel}}">
+              <i class="fa-solid {{#if (ttaEq visibility "players")}}fa-eye{{else}}fa-lock{{/if}}" aria-hidden="true"></i>
+              {{visibilityLabel}}
+            </span>
+            {{#if promoted}}
+              <span class="tta-badge tta-badge-promoted" data-tooltip="{{localize "TTA.Notes.PromotedTooltip"}}">
+                <i class="fa-solid fa-landmark-flag" aria-hidden="true"></i> {{localize "TTA.Notes.Promoted"}}
+              </span>
+            {{/if}}
+          </span>
+        </header>
+
+        <p class="tta-note-meta">
+          <i class="fa-solid fa-user-pen" aria-hidden="true"></i> {{authorName}}
+        </p>
+
+        <div class="tta-note-content">{{{enriched}}}</div>
+
+        <footer class="tta-note-actions">
+          <button type="button" data-action="openJournal" data-uuid="{{uuid}}">
+            <i class="fa-solid fa-book-open" aria-hidden="true"></i> {{localize "TTA.Notes.OpenJournal"}}
+          </button>
+          {{#if canEdit}}
+            <button type="button" data-action="editNote" data-uuid="{{uuid}}">
+              <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> {{localize "TTA.Common.Edit"}}
+            </button>
+          {{/if}}
+          {{#if ../canPromote}}
+            {{#unless promoted}}
+              <button type="button" data-action="promoteNote" data-uuid="{{uuid}}">
+                <i class="fa-solid fa-arrow-up-right-dots" aria-hidden="true"></i> {{localize "TTA.Notes.Promote"}}
+              </button>
+            {{/unless}}
+          {{/if}}
+          {{#if canDelete}}
+            <button type="button" class="tta-danger" data-action="deleteNote" data-uuid="{{uuid}}">
+              <i class="fa-solid fa-trash" aria-hidden="true"></i> {{localize "TTA.Common.Delete"}}
+            </button>
+          {{/if}}
+        </footer>
+      </li>
+    {{/each}}
+  </ul>
+{{else}}
+  <p class="tta-empty">{{emptyLabel}}</p>
+{{/if}}

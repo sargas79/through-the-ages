@@ -1,0 +1,27 @@
+{{#if empty}}
+  <td class="tta-day tta-day-empty" aria-hidden="true"></td>
+{{else}}
+  <td class="tta-day {{#if isCurrent}}tta-day-current{{/if}} {{#if isSelected}}tta-day-selected{{/if}}">
+    <button type="button"
+            class="tta-day-button"
+            data-action="selectDay"
+            data-day="{{day}}"
+            aria-pressed="{{#if isSelected}}true{{else}}false{{/if}}"
+            aria-label="{{label}}">
+      <span class="tta-day-number">{{day}}</span>
+      <span class="tta-day-marks">
+        {{#if hasNotes}}
+          <span class="tta-mark tta-mark-note" data-tooltip="{{noteCount}}">
+            <i class="fa-solid fa-note-sticky" aria-hidden="true"></i><span class="tta-mark-count">{{noteCount}}</span>
+          </span>
+        {{/if}}
+        {{#if hasEvents}}
+          <span class="tta-mark tta-mark-event" data-tooltip="{{eventCount}}">
+            <i class="fa-solid fa-landmark-flag" aria-hidden="true"></i><span class="tta-mark-count">{{eventCount}}</span>
+          </span>
+        {{/if}}
+      </span>
+      {{#if isCurrent}}<span class="tta-sr-only">{{localize "TTA.Calendar.IsCurrentDay"}}</span>{{/if}}
+    </button>
+  </td>
+{{/if}}

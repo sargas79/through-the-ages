@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Derive version from tag
+        id: version
+        run: echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Check module.json matches the tag
+        run: |
+          MANIFEST_VERSION=$(node -p "require('./module.json').version")
+          if [ "$MANIFEST_VERSION" != "${{ steps.version.outputs.value }}" ]; then
+            echo "module.json version ($MANIFEST_VERSION) does not match tag (${{ steps.version.outputs.value }})"
+            exit 1
+          fi
+
+      - name: Pin the download URL for this release
+        run: |
+          node -e "
+            const fs = require('fs');
+            const manifest = JSON.parse(fs.readFileSync('module.json', 'utf8'));
+            manifest.download = 'https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/module.zip';
+            fs.writeFileSync('module.json', JSON.stringify(manifest, null, 2) + '\n');
+          "
+
+      - name: Build the package
+        run: |
+          zip -r module.zip \
+            module.json LICENSE README.md CHANGELOG.md \
+            scripts templates styles lang
+
+      - name: Publish the release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Through the Ages ${{ github.ref_name }}
+          files: |
+            module.json
+            module.zip
+          body: See CHANGELOG.md for the full list of changes.

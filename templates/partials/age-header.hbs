@@ -1,0 +1,20 @@
+<header class="tta-age-header" style="--tta-accent: {{age.color}}">
+  <div class="tta-age-identity">
+    <span class="tta-eyebrow">{{localize "TTA.Ages.Age"}}</span>
+    <h3 class="tta-age-name">{{age.name}}</h3>
+    <p class="tta-age-range">
+      {{localize "TTA.Common.YearRange"}} {{age.startYear}}&ndash;{{age.endYear}}
+      <span class="tta-muted">({{localize "TTA.Ages.YearCount"}}: {{age.yearCount}})</span>
+    </p>
+  </div>
+
+  {{#if age.description}}
+    <p class="tta-age-description">{{age.description}}</p>
+  {{/if}}
+
+  {{#unless age.playerVisible}}
+    <p class="tta-badge tta-badge-gm-only">
+      <i class="fa-solid fa-lock" aria-hidden="true"></i> {{localize "TTA.Ages.HiddenFromPlayers"}}
+    </p>
+  {{/unless}}
+</header>
