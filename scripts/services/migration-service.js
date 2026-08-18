@@ -18,6 +18,7 @@ import {
 } from "../constants.js";
 import { normalizeAge, sortAges } from "./age-service.js";
 import { compareDateKeys, parseKey } from "./date-service.js";
+import { normalizeMoon, sortMoons } from "./moon-service.js";
 
 function clampInt(value, min, max, fallback) {
   const n = Math.trunc(Number(value));
@@ -37,6 +38,17 @@ export function resizeNames(names, count, defaults, prefix) {
     result.push(existing || defaults[i] || `${prefix} ${i + 1}`);
   }
   return result;
+}
+
+/**
+ * Normalise the stored moon list: drop unusable entries, fill defaults, cap the
+ * list at the supported maximum, and re-index the sort order.
+ */
+export function migrateMoons(moons) {
+  const source = Array.isArray(moons) ? moons : [];
+  return sortMoons(source.filter(moon => moon && typeof moon === "object").map((moon, i) => normalizeMoon(moon, i)))
+    .slice(0, LIMITS.MOONS_MAX)
+    .map((moon, i) => ({ ...moon, sortOrder: i }));
 }
 
 /** True when stored data is missing or predates the current schema. */
@@ -78,12 +90,14 @@ export function migrateCalendarData(data) {
     minute: clampInt(rawTime?.minute, 0, 59, 0)
   };
 
+  const moons = migrateMoons(calendar.moons);
+
   const ages = sortAges((Array.isArray(source.ages) ? source.ages : []).map((age, i) => normalizeAge(age, i)))
     .map((age, i) => ({ ...age, sortOrder: i }));
 
   return {
     schemaVersion: SCHEMA_VERSION,
-    calendar: { monthsPerYear, daysPerMonth, monthNames, weekdayNames, currentDate, currentTime },
+    calendar: { monthsPerYear, daysPerMonth, monthNames, weekdayNames, currentDate, currentTime, moons },
     ages
   };
 }

@@ -19,6 +19,7 @@ import {
   toAbsoluteDay,
   weekdayName
 } from "./date-service.js";
+import { describePhase, sortMoons, visibleMoons } from "./moon-service.js";
 import { migrateCalendarData, needsMigration } from "./migration-service.js";
 import { canChangeTime, canConfigureCalendar, isGM } from "./permission-service.js";
 
@@ -41,6 +42,31 @@ export function getCurrentDate() {
 /** The shared campaign clock, stored to minute precision. */
 export function getCurrentTime() {
   return getCalendar().currentTime;
+}
+
+/** Every configured moon, ordered. */
+export function getMoons() {
+  return sortMoons(getCalendar().moons ?? []);
+}
+
+/** Moons the given user may see. */
+export function getVisibleMoons(user = game.user) {
+  return visibleMoons(getCalendar().moons ?? [], isGM(user));
+}
+
+/**
+ * Render-ready phase data for every moon the user may see on a given date.
+ * Returns an empty array when no moons are configured, which is the default.
+ */
+export function getMoonPhases(date = getCurrentDate(), { user = game.user } = {}) {
+  const calendar = getCalendar();
+  const moons = visibleMoons(calendar.moons ?? [], isGM(user));
+  if (!moons.length) return [];
+  const absoluteDay = toAbsoluteDay(date, calendar);
+  return moons.map(moon => {
+    const phase = describePhase(moon, absoluteDay);
+    return { ...phase, phaseLabel: t(`TTA.Moons.Phase.${phase.phaseKey}`) };
+  });
 }
 
 /** Every configured Age, ordered. */

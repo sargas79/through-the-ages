@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { LIMITS } from "../scripts/constants.js";
 import {
   structuralChangeWarnings,
   validateAges,
   validateCalendarData,
   validateEvent,
+  validateMoons,
   validateNote
 } from "../scripts/services/validation-service.js";
 
@@ -193,5 +195,74 @@ describe("event validation", () => {
 
   it("rejects a date outside the calendar", () => {
     assert.ok(codes(validateEvent({ title: "x", visibility: "players", dateKey: "0004-02-99" }, CALENDAR)).includes("eventDateOutOfRange"));
+  });
+});
+
+function moonRecord(overrides = {}) {
+  return { id: "m1", name: "Selene", cycleLength: 28, offset: 0, phaseCount: 8, ...overrides };
+}
+
+describe("validateMoons", () => {
+  it("accepts an empty list, which is the default", () => {
+    const result = validateMoons([]);
+    assert.ok(result.valid);
+    assert.equal(result.errors.length, 0);
+  });
+
+  it("accepts a well-formed moon", () => {
+    assert.ok(validateMoons([moonRecord()]).valid);
+  });
+
+  it("rejects a non-array list", () => {
+    assert.deepEqual(codes(validateMoons("nope")), ["moonListInvalid"]);
+  });
+
+  it("rejects more moons than the limit allows", () => {
+    const many = Array.from({ length: LIMITS.MOONS_MAX + 1 }, (_, i) => moonRecord({ id: `m${i}`, name: `Moon ${i}` }));
+    assert.ok(codes(validateMoons(many)).includes("moonCount"));
+  });
+
+  it("requires a name", () => {
+    assert.ok(codes(validateMoons([moonRecord({ name: "  " })])).includes("moonNameEmpty"));
+  });
+
+  it("requires unique names", () => {
+    const moons = [moonRecord(), moonRecord({ id: "m2" })];
+    assert.ok(codes(validateMoons(moons)).includes("moonNameDuplicate"));
+  });
+
+  it("bounds the cycle length", () => {
+    assert.ok(codes(validateMoons([moonRecord({ cycleLength: 1 })])).includes("moonCycleRange"));
+    assert.ok(codes(validateMoons([moonRecord({ cycleLength: 10000 })])).includes("moonCycleRange"));
+    assert.ok(codes(validateMoons([moonRecord({ cycleLength: 4.5 })])).includes("moonCycleRange"));
+  });
+
+  it("bounds the offset by the cycle length", () => {
+    assert.ok(codes(validateMoons([moonRecord({ offset: 28 })])).includes("moonOffsetRange"));
+    assert.ok(codes(validateMoons([moonRecord({ offset: -1 })])).includes("moonOffsetRange"));
+    assert.ok(validateMoons([moonRecord({ offset: 27 })]).valid);
+  });
+
+  it("restricts the phase count to the supported values", () => {
+    assert.ok(codes(validateMoons([moonRecord({ phaseCount: 5 })])).includes("moonPhaseCount"));
+    assert.ok(validateMoons([moonRecord({ phaseCount: 2 })]).valid);
+  });
+
+  it("warns when a cycle divides the month exactly", () => {
+    const result = validateMoons([moonRecord({ cycleLength: 10 })], { daysPerMonth: 30 });
+    assert.ok(result.valid);
+    assert.ok(result.warnings.some(warning => warning.code === "moonCycleLocked"));
+  });
+});
+
+describe("validateCalendarData with moons", () => {
+  it("passes moon errors through", () => {
+    const data = validData();
+    data.calendar.moons = [moonRecord({ name: "" })];
+    assert.ok(codes(validateCalendarData(data)).includes("moonNameEmpty"));
+  });
+
+  it("stays valid when no moons are configured", () => {
+    assert.ok(validateCalendarData(validData()).valid);
   });
 });

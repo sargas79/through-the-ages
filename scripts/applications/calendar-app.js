@@ -24,6 +24,8 @@ import {
   getCurrentAge,
   getCurrentDate,
   getCurrentTime,
+  getMoonPhases,
+  getVisibleMoons,
   isConfigured,
   isWorldTimeOutOfSync,
 } from "../services/calendar-service.js";
@@ -36,8 +38,10 @@ import {
   isSameMonth,
   monthKey,
   monthName,
+  toAbsoluteDay,
   weekdayName
 } from "../services/date-service.js";
+import { describePhase } from "../services/moon-service.js";
 import {
   deleteNote,
   filterNotes,
@@ -136,15 +140,18 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const grid = buildMonthGrid(this.viewYear, this.viewMonth, calendar);
     const noteCounts = getMonthNoteCounts(this.viewYear, this.viewMonth);
     const eventCounts = getMonthEventCounts(this.viewYear, this.viewMonth);
+    const gridMoons = getVisibleMoons().filter(moon => moon.showInGrid !== false);
 
     const weeks = grid.weeks.map(week => week.map(cell => {
       if (cell.day === null) return { empty: true };
       const date = { year: this.viewYear, month: this.viewMonth, day: cell.day };
       const notes = noteCounts[cell.day] ?? 0;
       const events = eventCounts[cell.day] ?? 0;
+      const absoluteDay = toAbsoluteDay(date, calendar);
       return {
         empty: false,
         day: cell.day,
+        moons: gridMoons.map(moon => describePhase(moon, absoluteDay)),
         dateKey: dayKey(date.year, date.month, date.day),
         weekday: weekdayName(date, calendar),
         isCurrent: isSameDay(date, current),
@@ -192,6 +199,8 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
       currentAge: currentAge ? { ...currentAge, endYear: endYear(currentAge) } : null,
       viewAge: viewAge ? { ...viewAge, endYear: endYear(viewAge) } : null,
       selectedDay: this.selectedDay,
+      currentMoons: getMoonPhases(current),
+      selectedMoons: getMoonPhases(this.selectedDate),
       selectedKey,
       selectedLabel: formatDate(this.selectedDate),
       monthNoteKey,

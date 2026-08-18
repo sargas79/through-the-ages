@@ -6,7 +6,7 @@
  * Codes resolve to `TTA.Validation.<code>` keys in `lang/en.json`.
  */
 
-import { LIMITS, SCOPE, VISIBILITY } from "../constants.js";
+import { LIMITS, MOON_PHASE_COUNTS, SCOPE, VISIBILITY } from "../constants.js";
 import { endYear, findGaps, findOverlaps } from "./age-service.js";
 import { isValidDate, parseKey } from "./date-service.js";
 
@@ -76,9 +76,64 @@ export function validateCalendarData(data) {
     }));
   }
 
+  const moonResult = validateMoons(calendar.moons ?? [], calendar);
+  errors.push(...moonResult.errors);
+  warnings.push(...moonResult.warnings);
+
   const ageResult = validateAges(data?.ages ?? []);
   errors.push(...ageResult.errors);
   warnings.push(...ageResult.warnings);
+
+  return { valid: errors.length === 0, errors, warnings };
+}
+
+/**
+ * Validate a moon list: count, names, cycle bounds, offsets and phase counts.
+ *
+ * `calendar` is optional and only used to warn about cycles that never drift
+ * against the month length, which is legal but rarely what a GM intends.
+ * @returns {{valid:boolean, errors:Array, warnings:Array}}
+ */
+export function validateMoons(moons = [], calendar = null) {
+  const errors = [];
+  const warnings = [];
+
+  if (!Array.isArray(moons)) {
+    errors.push(issue("moonListInvalid"));
+    return { valid: false, errors, warnings };
+  }
+
+  if (moons.length > LIMITS.MOONS_MAX) {
+    errors.push(issue("moonCount", { max: LIMITS.MOONS_MAX, actual: moons.length }));
+  }
+
+  for (const moon of moons) {
+    const name = String(moon?.name ?? "").trim();
+    if (!name) errors.push(issue("moonNameEmpty"));
+
+    if (!isIntegerInRange(moon?.cycleLength, LIMITS.MOON_CYCLE_MIN, LIMITS.MOON_CYCLE_MAX)) {
+      errors.push(issue("moonCycleRange", {
+        name,
+        min: LIMITS.MOON_CYCLE_MIN,
+        max: LIMITS.MOON_CYCLE_MAX
+      }));
+    } else if (!isIntegerInRange(moon?.offset, 0, Number(moon.cycleLength) - 1)) {
+      errors.push(issue("moonOffsetRange", { name, max: Number(moon.cycleLength) - 1 }));
+    }
+
+    if (!MOON_PHASE_COUNTS.includes(Number(moon?.phaseCount))) {
+      errors.push(issue("moonPhaseCount", { name, counts: MOON_PHASE_COUNTS.join(", ") }));
+    }
+
+    const daysPerMonth = Number(calendar?.daysPerMonth);
+    const cycle = Number(moon?.cycleLength);
+    if (daysPerMonth > 0 && cycle > 0 && daysPerMonth % cycle === 0) {
+      warnings.push(issue("moonCycleLocked", { name, cycle, days: daysPerMonth }));
+    }
+  }
+
+  const dupeNames = duplicates(moons.map(moon => moon?.name));
+  if (dupeNames.length) errors.push(issue("moonNameDuplicate", { names: dupeNames.join(", ") }));
 
   return { valid: errors.length === 0, errors, warnings };
 }

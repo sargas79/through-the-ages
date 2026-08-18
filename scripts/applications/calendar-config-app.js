@@ -11,15 +11,22 @@ import { confirmDialog, log, randomID, t } from "../compat.js";
 import {
   DEFAULT_COLOR,
   DEFAULT_MONTH_NAMES,
+  DEFAULT_MOON_COLOR,
+  DEFAULT_MOON_NAMES,
+  DEFAULT_MOON_PHASE_COUNT,
   DEFAULT_WEEKDAY_NAMES,
   LIMITS,
-  MODULE_ID
+  MODULE_ID,
+  MOON_PHASE_COUNTS
 } from "../constants.js";
 import { endYear, sortAges } from "../services/age-service.js";
 import { getData, saveData } from "../services/calendar-service.js";
+import { toAbsoluteDay } from "../services/date-service.js";
 import * as journal from "../services/journal-service.js";
 import { migrateCalendarData, resizeNames } from "../services/migration-service.js";
+import { describePhase, sortMoons } from "../services/moon-service.js";
 import { canConfigureCalendar } from "../services/permission-service.js";
+import * as portability from "../services/portability-service.js";
 import * as timeline from "../services/timeline-service.js";
 import { structuralChangeWarnings, validateCalendarData } from "../services/validation-service.js";
 
@@ -29,6 +36,8 @@ export class CalendarConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
   constructor(options = {}) {
     super({ ...options, id: "tta-calendar-config" });
     this.draft = migrateCalendarData(getData());
+    /** Events staged by an import, written only when the form is submitted. */
+    this.pendingEvents = null;
   }
 
   static DEFAULT_OPTIONS = {
@@ -51,7 +60,14 @@ export class CalendarConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
       moveAgeUp: CalendarConfigApp.onMoveAgeUp,
       moveAgeDown: CalendarConfigApp.onMoveAgeDown,
       resetNames: CalendarConfigApp.onResetNames,
-      repairFolder: CalendarConfigApp.onRepairFolder
+      repairFolder: CalendarConfigApp.onRepairFolder,
+      addMoon: CalendarConfigApp.onAddMoon,
+      removeMoon: CalendarConfigApp.onRemoveMoon,
+      moveMoonUp: CalendarConfigApp.onMoveMoonUp,
+      moveMoonDown: CalendarConfigApp.onMoveMoonDown,
+      exportCalendar: CalendarConfigApp.onExportCalendar,
+      importCalendar: CalendarConfigApp.onImportCalendar,
+      discardImport: CalendarConfigApp.onDiscardImport
     }
   };
 
@@ -82,10 +98,35 @@ export class CalendarConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
         endYear: endYear(age)
       })),
       hasAges: this.draft.ages.length > 0,
+      moons: sortMoons(calendar.moons).map(moon => this.#decorateMoon(moon)),
+      hasMoons: calendar.moons.length > 0,
+      canAddMoon: calendar.moons.length < LIMITS.MOONS_MAX,
+      moonsMax: LIMITS.MOONS_MAX,
+      pendingEventCount: this.pendingEvents?.length ?? null,
+      hasPendingImport: Array.isArray(this.pendingEvents),
       errors: validation.errors.map(error => t(`TTA.Validation.${error.code}`, error.data)),
       warnings: validation.warnings.map(warning => t(`TTA.Validation.${warning.code}`, warning.data)),
       isValid: validation.valid,
       folderName: journal.getFolder()?.name ?? null
+    };
+  }
+
+  /** A moon row plus its phase on the draft's current date, for the preview. */
+  #decorateMoon(moon) {
+    const calendar = this.draft.calendar;
+    const phase = describePhase(moon, toAbsoluteDay(calendar.currentDate, calendar));
+    return {
+      ...moon,
+      phaseLabel: t(`TTA.Moons.Phase.${phase.phaseKey}`),
+      illumination: phase.illumination,
+      terminator: phase.terminator,
+      gibbous: phase.gibbous,
+      waxing: phase.waxing,
+      phaseChoices: MOON_PHASE_COUNTS.map(count => ({
+        value: count,
+        label: t("TTA.Moons.PhaseCountOption", { count }),
+        selected: count === moon.phaseCount
+      }))
     };
   }
 
@@ -120,6 +161,25 @@ export class CalendarConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
     const monthNames = [...root.querySelectorAll("[data-month-name]")].map(input => input.value);
     const weekdayNames = [...root.querySelectorAll("[data-weekday-name]")].map(input => input.value);
 
+    const moons = [...root.querySelectorAll("[data-moon-row]")].map((row, index) => {
+      const cycleLength = Math.min(
+        Math.max(Number(row.querySelector("[data-field='cycleLength']")?.value) || LIMITS.MOON_CYCLE_MIN, LIMITS.MOON_CYCLE_MIN),
+        LIMITS.MOON_CYCLE_MAX
+      );
+      const rawOffset = Math.trunc(Number(row.querySelector("[data-field='offset']")?.value)) || 0;
+      return {
+        id: row.dataset.moonId,
+        name: row.querySelector("[data-field='name']")?.value ?? "",
+        cycleLength,
+        offset: ((rawOffset % cycleLength) + cycleLength) % cycleLength,
+        phaseCount: Number(row.querySelector("[data-field='phaseCount']")?.value) || DEFAULT_MOON_PHASE_COUNT,
+        color: row.querySelector("[data-field='color']")?.value || DEFAULT_MOON_COLOR,
+        showInGrid: row.querySelector("[data-field='showInGrid']")?.checked ?? true,
+        playerVisible: row.querySelector("[data-field='playerVisible']")?.checked ?? true,
+        sortOrder: index
+      };
+    });
+
     const ages = [...root.querySelectorAll("[data-age-row]")].map((row, index) => ({
       id: row.dataset.ageId,
       name: row.querySelector("[data-field='name']")?.value ?? "",
@@ -142,7 +202,9 @@ export class CalendarConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
           year: Math.max(LIMITS.YEAR_MIN, number("[name='currentYear']", previous.currentDate.year)),
           month: Math.min(Math.max(1, number("[name='currentMonth']", previous.currentDate.month)), monthsPerYear),
           day: Math.min(Math.max(1, number("[name='currentDay']", previous.currentDate.day)), daysPerMonth)
-        }
+        },
+        currentTime: previous.currentTime,
+        moons
       },
       ages
     };
@@ -204,6 +266,161 @@ export class CalendarConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
     this.render();
   }
 
+  static async onAddMoon() {
+    this.#readForm();
+    const moons = this.draft.calendar.moons;
+    if (moons.length >= LIMITS.MOONS_MAX) {
+      ui.notifications.warn(t("TTA.Moons.LimitReached", { max: LIMITS.MOONS_MAX }));
+      return;
+    }
+    // Pick the first unused default so a new row never collides with an
+    // existing name, which would fail validation on save.
+    const taken = new Set(moons.map(moon => String(moon.name ?? "").trim().toLowerCase()));
+    const name = DEFAULT_MOON_NAMES.find(candidate => !taken.has(candidate.toLowerCase()))
+      ?? t("TTA.Moons.NewMoonName");
+
+    moons.push({
+      id: randomID(),
+      name,
+      cycleLength: 28,
+      offset: 0,
+      phaseCount: DEFAULT_MOON_PHASE_COUNT,
+      color: DEFAULT_MOON_COLOR,
+      showInGrid: true,
+      playerVisible: true,
+      sortOrder: moons.length
+    });
+    this.render();
+  }
+
+  static async onRemoveMoon(event, target) {
+    this.#readForm();
+    const id = target.closest("[data-moon-row]")?.dataset.moonId;
+    const moon = this.draft.calendar.moons.find(m => m.id === id);
+    if (!moon) return;
+
+    const confirmed = await confirmDialog({
+      title: t("TTA.Moons.RemoveTitle"),
+      content: `<p>${t("TTA.Moons.RemoveBody", { name: moon.name })}</p>`,
+      yesLabel: t("TTA.Common.Remove"),
+      yesIcon: "fa-solid fa-trash"
+    });
+    if (!confirmed) return;
+
+    this.draft.calendar.moons = this.draft.calendar.moons.filter(m => m.id !== id);
+    this.render();
+  }
+
+  static async onMoveMoonUp(event, target) {
+    this.#moveMoon(target, -1);
+  }
+
+  static async onMoveMoonDown(event, target) {
+    this.#moveMoon(target, 1);
+  }
+
+  #moveMoon(target, delta) {
+    this.#readForm();
+    const id = target.closest("[data-moon-row]")?.dataset.moonId;
+    const ordered = sortMoons(this.draft.calendar.moons);
+    const index = ordered.findIndex(moon => moon.id === id);
+    const next = index + delta;
+    if (index < 0 || next < 0 || next >= ordered.length) return;
+    [ordered[index], ordered[next]] = [ordered[next], ordered[index]];
+    this.draft.calendar.moons = ordered.map((moon, i) => ({ ...moon, sortOrder: i }));
+    this.render();
+  }
+
+  /** Download the draft as a JSON file, optionally with the stored events. */
+  static async onExportCalendar() {
+    this.#readForm();
+    const includeEvents = this.element?.querySelector("[data-export-events]")?.checked ?? true;
+    const payload = portability.buildExportPayload({
+      calendar: this.draft.calendar,
+      ages: this.draft.ages,
+      events: includeEvents ? timeline.getEvents() : null,
+      moduleVersion: game.modules.get(MODULE_ID)?.version ?? "",
+      worldTitle: game.world?.title ?? ""
+    });
+    if (portability.downloadExport(payload)) {
+      ui.notifications.info(t("TTA.Notifications.CalendarExported"));
+    }
+  }
+
+  /**
+   * Load a JSON export into the draft. Nothing is written to the world until
+   * the GM reviews the result and submits the form.
+   */
+  static async onImportCalendar() {
+    if (!canConfigureCalendar()) {
+      ui.notifications.warn(t("TTA.Errors.GMOnly"));
+      return;
+    }
+
+    const file = await CalendarConfigApp.#pickFile();
+    if (!file) return;
+
+    const text = await portability.readImportFile(file);
+    if (text === null) {
+      ui.notifications.error(t("TTA.Errors.ImportUnreadable"));
+      return;
+    }
+
+    const parsed = portability.parseImport(text);
+    if (!parsed.data) {
+      const message = parsed.errors.map(error => t(`TTA.Validation.${error.code}`, error.data)).join(" ");
+      ui.notifications.error(message || t("TTA.Errors.ImportInvalid"));
+      return;
+    }
+
+    const summary = portability.summarizeImport(parsed, getData());
+    const rows = [
+      t("TTA.Import.RowMonths", summary.months),
+      t("TTA.Import.RowDays", summary.days),
+      t("TTA.Import.RowWeekdays", summary.weekdays),
+      t("TTA.Import.RowMoons", summary.moons),
+      t("TTA.Import.RowAges", summary.ages)
+    ];
+    if (summary.events !== null) rows.push(t("TTA.Import.RowEvents", { count: summary.events }));
+
+    const problems = [...parsed.errors, ...parsed.warnings]
+      .map(entry => `<li>${t(`TTA.Validation.${entry.code}`, entry.data)}</li>`)
+      .join("");
+
+    const confirmed = await confirmDialog({
+      title: t("TTA.Import.ConfirmTitle"),
+      content: `<p>${t("TTA.Import.ConfirmBody", { name: file.name })}</p>`
+        + `<ul>${rows.map(row => `<li>${row}</li>`).join("")}</ul>`
+        + (problems ? `<p class="notification warning">${t("TTA.Import.ProblemsHeading")}</p><ul>${problems}</ul>` : "")
+        + `<p>${t("TTA.Import.ReviewHint")}</p>`,
+      yesLabel: t("TTA.Import.Load")
+    });
+    if (!confirmed) return;
+
+    this.draft = parsed.data;
+    this.pendingEvents = parsed.events;
+    ui.notifications.info(t("TTA.Notifications.CalendarImported"));
+    this.render();
+  }
+
+  /** Drop staged import events without touching the loaded calendar draft. */
+  static async onDiscardImport() {
+    this.pendingEvents = null;
+    this.render();
+  }
+
+  /** Prompt for a single JSON file, resolving null when the GM cancels. */
+  static #pickFile() {
+    return new Promise(resolve => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "application/json,.json";
+      input.addEventListener("change", () => resolve(input.files?.[0] ?? null), { once: true });
+      input.addEventListener("cancel", () => resolve(null), { once: true });
+      input.click();
+    });
+  }
+
   static async onResetNames() {
     this.#readForm();
     const { monthsPerYear, weekdayNames } = this.draft.calendar;
@@ -250,6 +467,12 @@ export class CalendarConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
       ...structuralChangeWarnings(this.draft.calendar, usage, stored),
       ...validation.warnings
     ];
+    if (Array.isArray(this.pendingEvents)) {
+      warnings.push({
+        code: "importReplacesEvents",
+        data: { count: this.pendingEvents.length, existing: eventUsage.count }
+      });
+    }
 
     if (warnings.length) {
       const list = warnings.map(warning => `<li>${t(`TTA.Validation.${warning.code}`, warning.data)}</li>`).join("");
@@ -263,6 +486,10 @@ export class CalendarConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
 
     try {
       await saveData(this.draft);
+      if (Array.isArray(this.pendingEvents)) {
+        await timeline.replaceEvents(this.pendingEvents);
+        this.pendingEvents = null;
+      }
       await journal.ensureFolder();
       ui.notifications.info(t("TTA.Notifications.ConfigSaved"));
       this.render();
