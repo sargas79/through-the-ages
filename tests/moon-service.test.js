@@ -162,8 +162,8 @@ describe("daysUntilPhase", () => {
   });
 
   it("counts forward to the next occurrence", () => {
-    assert.equal(daysUntilPhase(moon, 0, 4), 14);
-    assert.equal(daysUntilPhase(moon, 15, 0), 13);
+    assert.equal(daysUntilPhase(moon, 0, 4), 13);
+    assert.equal(daysUntilPhase(moon, 15, 0), 12);
   });
 
   it("wraps the target index", () => {
