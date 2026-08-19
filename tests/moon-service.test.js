@@ -9,6 +9,7 @@ import {
   illumination,
   isFullMoon,
   isNewMoon,
+  isPhaseChange,
   isWaxing,
   normalizeMoon,
   phaseFraction,
@@ -20,6 +21,11 @@ import {
 
 /** A 28-day, 8-phase moon starting new on absolute day 0. */
 const moon = normalizeMoon({ id: "m1", name: "Selene", cycleLength: 28, offset: 0 });
+
+/** First absolute day on which `moon` reads as the given phase index. */
+function changeDay(m, targetIndex) {
+  return daysUntilPhase(m, 0, targetIndex);
+}
 
 describe("normalizeMoon", () => {
   it("fills defaults for an empty record", () => {
@@ -182,6 +188,25 @@ describe("daysUntilPhase", () => {
 
   it("wraps the target index", () => {
     assert.equal(daysUntilPhase(moon, 0, 8), 0);
+  });
+});
+
+describe("isPhaseChange", () => {
+  it("is true only on the first day of each named phase", () => {
+    const changes = [];
+    for (let day = 0; day < moon.cycleLength; day++) {
+      if (isPhaseChange(moon, day)) changes.push(day);
+    }
+    assert.equal(changes.length, moon.phaseCount);
+    for (const day of changes) {
+      assert.notEqual(phaseIndex(moon, day), phaseIndex(moon, day - 1));
+      assert.equal(phaseIndex(moon, day), phaseIndex(moon, day + 1));
+    }
+  });
+
+  it("is reported by describePhase", () => {
+    assert.equal(describePhase(moon, changeDay(moon, 4)).isPhaseChange, true);
+    assert.equal(describePhase(moon, changeDay(moon, 4) + 1).isPhaseChange, false);
   });
 });
 

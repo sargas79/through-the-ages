@@ -113,6 +113,16 @@ export function isNewMoon(moon, absoluteDay) {
 }
 
 /**
+ * True on the first day a moon reads as a different named phase than it did
+ * the day before. The grid marks only these days, so a moon appears when its
+ * phase turns over rather than on every day of the month.
+ */
+export function isPhaseChange(moon, absoluteDay) {
+  const day = Math.trunc(Number(absoluteDay));
+  return phaseIndex(moon, day) !== phaseIndex(moon, day - 1);
+}
+
+/**
  * Whole days from `absoluteDay` until the moon next reaches a named phase.
  * Returns `0` when the moon is already in that phase today.
  */
@@ -148,6 +158,7 @@ export function describePhase(moon, absoluteDay) {
     gibbous: lit > 0.5,
     waxing: isWaxing(moon, absoluteDay),
     isFull: isFullMoon(moon, absoluteDay),
-    isNew: isNewMoon(moon, absoluteDay)
+    isNew: isNewMoon(moon, absoluteDay),
+    isPhaseChange: isPhaseChange(moon, absoluteDay)
   };
 }

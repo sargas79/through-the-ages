@@ -156,7 +156,11 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
       return {
         empty: false,
         day: cell.day,
-        moons: gridMoons.map(moon => describePhase(moon, absoluteDay)),
+        // Only the days a moon turns over into a new phase carry a disc; the
+        // detail panel still reports the phase for every day.
+        moons: gridMoons
+          .map(moon => describePhase(moon, absoluteDay))
+          .filter(phase => phase.isPhaseChange),
         // The cell shows at most three note dots and two event dots; the exact
         // counts stay in the cell's accessible label.
         noteDots: new Array(Math.min(notes, 3)).fill(true),
