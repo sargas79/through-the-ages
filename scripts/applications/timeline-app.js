@@ -6,7 +6,7 @@
  * control in this window changes the shared campaign date.
  */
 
-import { confirmDialog, enrichHTML, log, promptForm, t } from "../compat.js";
+import { confirmDialog, enrichHTML, log, promptForm, renderTemplate, t } from "../compat.js";
 import { MODULE_ID, TIMELINE_MODE, VISIBILITY } from "../constants.js";
 import { endYear, yearsInAge } from "../services/age-service.js";
 import {
@@ -43,6 +43,9 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
     this.viewMonth = current.month;
     this.filter = "all";
   }
+
+  /** Ticket of the most recent events repaint, used to discard stale ones. */
+  #eventsPass = 0;
 
   static DEFAULT_OPTIONS = {
     classes: ["tta", "tta-app", "tta-timeline"],
@@ -300,8 +303,68 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
     super._onRender(context, options);
     this.element.querySelector("[data-filter-select]")?.addEventListener("change", event => {
       this.filter = event.currentTarget.value;
-      this.render();
+      this.#browse();
     });
+  }
+
+  /**
+   * Show a different span, or the same span filtered differently, without
+   * rendering the window again.
+   *
+   * Only the region below the Age bands depends on either: the bands keep their
+   * geometry whatever is browsed, and a full render would rebuild them under
+   * the pointer. That costs the band row its horizontal scroll - a campaign
+   * with many Ages scrolls that row - the body its vertical scroll, and the
+   * clicked control its focus, for a repaint of markup that has not changed.
+   */
+  #browse() {
+    this.#applyViewMarks();
+    this.#refreshEvents();
+  }
+
+  /**
+   * Move the marks that say which span is being browsed. Both read from local
+   * state, so they can move on the click itself rather than waiting for the
+   * events below to be rebuilt.
+   */
+  #applyViewMarks() {
+    const viewed = this.viewAge;
+    for (const band of this.element.querySelectorAll(".tta-band")) {
+      band.classList.toggle("tta-band-active", Number(band.dataset.year) === Number(viewed?.startYear));
+    }
+    const scope = this.element.querySelector(".tta-timeline-scope");
+    if (scope) scope.textContent = this.#scopeLabel(getMode(), viewed);
+  }
+
+  /**
+   * Repaint the spine, the count and the year list for the current view.
+   *
+   * Preparing the context enriches event descriptions and resolves promoted
+   * events' source notes, so two quick clicks can be in flight at once and the
+   * earlier one can finish last. Each pass takes a ticket and abandons its
+   * result once another pass has started, so what is listed always matches the
+   * span the toolbar names.
+   */
+  async #refreshEvents() {
+    const ticket = ++this.#eventsPass;
+    try {
+      if (!this.rendered) return;
+      const context = await this._prepareContext({});
+      if (ticket !== this.#eventsPass || !this.rendered) return;
+      const html = await renderTemplate(
+        `modules/${MODULE_ID}/templates/partials/timeline-events.hbs`,
+        context
+      );
+      if (ticket !== this.#eventsPass || !this.rendered) return;
+      const region = this.element.querySelector(".tta-timeline-events");
+      if (!region) return;
+      region.innerHTML = html;
+    } catch (error) {
+      // A failed repaint leaves the previous list in place, which is stale but
+      // readable; a full render would recover it at the cost of the flash this
+      // whole path exists to avoid.
+      log("error", "Failed to refresh the timeline events", error);
+    }
   }
 
   static async onSetMode(event, target) {
@@ -339,22 +402,22 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
       if (!target) return;
       this.viewYear = Number(target.startYear);
     }
-    this.render();
+    this.#browse();
   }
 
   static onGotoCurrent() {
     const current = getCurrentDate();
     this.viewYear = current.year;
     this.viewMonth = current.month;
-    this.render();
+    this.#browse();
   }
 
   /** Jump the local view to the Age whose band was clicked. */
   static onGotoAge(event, target) {
     const year = Number(target.dataset.year);
-    if (!Number.isInteger(year)) return;
+    if (!Number.isInteger(year) || year === Number(this.viewAge?.startYear)) return;
     this.viewYear = year;
-    this.render();
+    this.#browse();
   }
 
   static onAddEvent() {

@@ -1,0 +1,36 @@
+{{!-- Everything below the Age bands: the spine, the count and the year list.
+      Kept apart from the rest of the window so browsing and filtering can
+      repaint just this region instead of the whole application. --}}
+{{#if ticks.length}}
+  <div class="tta-spine" aria-hidden="true">
+    {{#each ticks}}
+      <div class="tta-tick {{#if isCurrent}}tta-tick-current{{/if}} {{#if hasEvent}}tta-tick-event{{/if}}"
+           style="--tta-tick-pos: {{position}}%">
+        <span class="tta-tick-mark"></span>
+        <span class="tta-tick-label">{{label}}</span>
+      </div>
+    {{/each}}
+  </div>
+{{/if}}
+
+<div class="tta-events-head">
+  <span class="tta-kicker">{{localize "TTA.Timeline.EventsHeading"}}</span>
+  <span class="tta-meta">{{localize "TTA.Timeline.EventCount"}}: <span class="tta-num">{{eventCount}}</span></span>
+</div>
+
+{{#if isEmpty}}
+  <p class="tta-empty">{{localize "TTA.Timeline.NoEvents"}}</p>
+{{else}}
+  <ol class="tta-year-list">
+    {{#each groups}}
+      <li class="tta-year {{#if isCurrent}}tta-year-current{{/if}}">
+        <div class="tta-year-gutter">{{year}}</div>
+        <ul class="tta-year-events">
+          {{#each events}}
+            {{> "modules/through-the-ages/templates/partials/timeline-event.hbs"}}
+          {{/each}}
+        </ul>
+      </li>
+    {{/each}}
+  </ol>
+{{/if}}

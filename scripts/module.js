@@ -28,7 +28,8 @@ const PARTIALS = [
   `${TEMPLATE_ROOT}/partials/calendar-day.hbs`,
   `${TEMPLATE_ROOT}/partials/day-detail.hbs`,
   `${TEMPLATE_ROOT}/partials/note-list.hbs`,
-  `${TEMPLATE_ROOT}/partials/timeline-event.hbs`
+  `${TEMPLATE_ROOT}/partials/timeline-event.hbs`,
+  `${TEMPLATE_ROOT}/partials/timeline-events.hbs`
 ];
 
 /** Handlebars helpers used by the module templates. */
