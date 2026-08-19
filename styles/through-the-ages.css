@@ -892,6 +892,22 @@
   border-color: color-mix(in srgb, var(--tta-accent) 55%, transparent);
 }
 
+/* A band is a `<button>`, so the generic `.tta button:hover/:active` rules
+ * (0,2,1) outweigh the two class rules above (0,2,0) and would wash their
+ * paint — the active band's gradient included — away under the pointer. Each
+ * band states its own hover and press ground at a weight that holds. */
+.tta .tta-band:hover,
+.tta .tta-band:active {
+  background: color-mix(in srgb, var(--tta-text) 10%, transparent);
+}
+
+.tta .tta-band-active:hover,
+.tta .tta-band-active:active {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--tta-section-glow) 72%, transparent),
+    color-mix(in srgb, var(--tta-section) 95%, transparent));
+}
+
 .tta .tta-band .tta-kicker {
   font-size: 9px;
   letter-spacing: 0.12em;
