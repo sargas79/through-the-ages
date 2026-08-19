@@ -38,6 +38,9 @@ jobs:
             fs.writeFileSync('module.json', JSON.stringify(manifest, null, 2) + '\n');
           "
 
+      - name: Reconcile the changelog with the tag
+        run: node .github/scripts/release-changelog.mjs "${{ steps.version.outputs.value }}" release-notes.md
+
       - name: Build the package
         run: |
           zip -r module.zip \
@@ -51,4 +54,4 @@ jobs:
           files: |
             module.json
             module.zip
-          body: See CHANGELOG.md for the full list of changes.
+          body_path: release-notes.md
