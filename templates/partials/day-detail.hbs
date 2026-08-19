@@ -1,0 +1,69 @@
+{{!-- The contents of the detail aside, kept apart from the rest of the window
+      so selecting a day can repaint just this panel instead of the whole
+      application. --}}
+{{#if showFilters}}
+  <div class="tta-filter">
+    <span class="tta-kicker tta-kicker-muted">{{localize "TTA.Filters.Label"}}</span>
+    <select class="tta-compact" data-filter-select aria-label="{{localize "TTA.Filters.Label"}}">
+      {{#each filterChoices}}
+        <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+      {{/each}}
+    </select>
+  </div>
+{{/if}}
+
+<section class="tta-detail-block">
+  <div class="tta-detail-head">
+    <h3>{{selectedLabel}}</h3>
+    <span class="tta-key">{{selectedKey}}</span>
+    {{#if canAddDayNote}}
+      <button type="button" class="tta-ghost tta-compact" data-action="addDayNote">{{localize "TTA.Notes.AddDay"}}</button>
+    {{/if}}
+  </div>
+
+  {{#if selectedMoons.length}}
+    <ul class="tta-moon-list" aria-label="{{localize "TTA.Moons.PhasesOnDay"}}">
+      {{#each selectedMoons}}
+        <li class="tta-moon-list-item {{#if isFull}}tta-moon-full{{/if}}">
+          <span class="tta-moon-disc {{#if waxing}}tta-waxing{{else}}tta-waning{{/if}} {{#if gibbous}}tta-gibbous{{/if}}"
+                style="--tta-moon-color: {{color}}; --tta-illumination: {{illumination}}; --tta-terminator: {{terminator}}"
+                aria-hidden="true"></span>
+          {{name}} &middot; {{phaseLabel}}
+        </li>
+      {{/each}}
+    </ul>
+  {{/if}}
+
+  {{> "modules/through-the-ages/templates/partials/note-list.hbs" notes=dayNotes canPromote=canPromote emptyLabel=(localize "TTA.Notes.NoDayNotes")}}
+
+  {{#if dayEvents.length}}
+    <ul class="tta-day-event-list" aria-label="{{localize "TTA.Timeline.EventsOnDay"}}">
+      {{#each dayEvents}}
+        <li class="tta-day-event" style="--tta-tint: {{color}}">
+          <span class="tta-event-dot" aria-hidden="true"></span>
+          <span class="tta-event-title">{{title}}</span>
+          <span class="tta-tag tta-tag-outline">{{localize "TTA.Timeline.EventTag"}}</span>
+        </li>
+      {{/each}}
+    </ul>
+  {{/if}}
+</section>
+
+<section class="tta-detail-block">
+  <div class="tta-detail-head">
+    <h3>{{viewLabel}}</h3>
+    <span class="tta-key">{{monthNoteKey}}</span>
+    {{#if canAddMonthNote}}
+      <button type="button" class="tta-ghost tta-compact" data-action="addMonthNote">{{localize "TTA.Notes.AddMonth"}}</button>
+    {{/if}}
+  </div>
+
+  {{> "modules/through-the-ages/templates/partials/note-list.hbs" notes=monthNotes canPromote=false emptyLabel=(localize "TTA.Notes.NoMonthNotes")}}
+</section>
+
+{{#if playerNotesDisabled}}
+  <p class="tta-note-disabled">{{localize "TTA.Notes.PlayerNotesOff"}}</p>
+{{/if}}
+{{#if noGMOnline}}
+  <p class="tta-note-warning">{{localize "TTA.Errors.NoActiveGM"}}</p>
+{{/if}}

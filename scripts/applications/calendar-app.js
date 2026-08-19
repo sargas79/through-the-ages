@@ -6,7 +6,7 @@
  * client. Only the GM time controls change the shared campaign date.
  */
 
-import { confirmDialog, enrichHTML, isDebug, log, promptForm, t } from "../compat.js";
+import { confirmDialog, enrichHTML, isDebug, log, promptForm, renderTemplate, t } from "../compat.js";
 import { MODULE_ID, SCOPE } from "../constants.js";
 import { endYear } from "../services/age-service.js";
 import {
@@ -250,15 +250,51 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
   _onRender(context, options) {
     super._onRender(context, options);
-    const filter = this.element.querySelector("[data-filter-select]");
-    filter?.addEventListener("change", event => {
-      this.filter = event.currentTarget.value;
-      this.render();
-    });
+    this.#bindDetailListeners();
     const preset = this.element.querySelector("[data-time-preset]");
     preset?.addEventListener("change", event => {
       this.timePreset = event.currentTarget.value;
     });
+  }
+
+  /**
+   * The filter select lives inside the detail panel, so its listener has to be
+   * re-attached whenever that panel is repainted on its own.
+   */
+  #bindDetailListeners() {
+    const filter = this.element.querySelector("[data-filter-select]");
+    filter?.addEventListener("change", event => {
+      this.filter = event.currentTarget.value;
+      this.#refreshDetail();
+    });
+  }
+
+  /**
+   * Repaint only the detail panel and the grid's selection marks. Selecting a
+   * day changes nothing else on screen, and a full render would rebuild the
+   * window underneath the pointer: the grid would flash, its scroll position
+   * would jump back to the top and the clicked day would lose focus.
+   */
+  async #refreshDetail() {
+    if (!this.rendered) return;
+    const context = await this._prepareContext({});
+    const detail = this.element.querySelector(".tta-detail");
+    if (!detail) return;
+    detail.innerHTML = await renderTemplate(
+      `modules/${MODULE_ID}/templates/partials/day-detail.hbs`,
+      context
+    );
+    this.#markSelectedDay();
+    this.#bindDetailListeners();
+  }
+
+  /** Move the selected-day styling and aria state to the current selection. */
+  #markSelectedDay() {
+    for (const button of this.element.querySelectorAll(".tta-day-button")) {
+      const isSelected = Number(button.dataset.day) === this.selectedDay;
+      button.setAttribute("aria-pressed", String(isSelected));
+      button.closest(".tta-day")?.classList.toggle("tta-day-selected", isSelected);
+    }
   }
 
   /** Move the browsing view without touching world time. */
@@ -294,9 +330,9 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
   static onSelectDay(event, target) {
     const day = Number(target.dataset.day);
-    if (!Number.isInteger(day)) return;
+    if (!Number.isInteger(day) || day === this.selectedDay) return;
     this.selectedDay = day;
-    this.render();
+    this.#refreshDetail();
   }
 
   static async onPrevDay() {
