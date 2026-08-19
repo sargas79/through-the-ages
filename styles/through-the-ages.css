@@ -164,8 +164,9 @@
  * the controls toggle) carry their glyph in a Font Awesome class on the button
  * itself, so any font-family set here would win over that class and paint them
  * as tofu boxes. They are excluded from every rule below and keep the core
- * look. */
-.tta button:not(.header-control) {
+ * look. The exclusion sits in `:where()` so it adds no specificity: the rules
+ * further down that style one button class must still win over these. */
+.tta button:where(:not(.header-control)) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -184,9 +185,9 @@
   transition: background-color 130ms ease-out, border-color 130ms ease-out;
 }
 
-.tta button:not(.header-control):hover { background: color-mix(in srgb, var(--tta-text) 7%, transparent); }
-.tta button:not(.header-control):active { background: color-mix(in srgb, var(--tta-text) 14%, transparent); }
-.tta button:not(.header-control):disabled { opacity: 0.45; cursor: not-allowed; background: transparent; }
+.tta button:where(:not(.header-control)):hover { background: color-mix(in srgb, var(--tta-text) 7%, transparent); }
+.tta button:where(:not(.header-control)):active { background: color-mix(in srgb, var(--tta-text) 14%, transparent); }
+.tta button:where(:not(.header-control)):disabled { opacity: 0.45; cursor: not-allowed; background: transparent; }
 
 .tta button.tta-primary,
 .tta button[type="submit"] {
@@ -889,6 +890,22 @@
     color-mix(in srgb, var(--tta-section-glow) 55%, transparent),
     color-mix(in srgb, var(--tta-section) 85%, transparent));
   border-color: color-mix(in srgb, var(--tta-accent) 55%, transparent);
+}
+
+/* A band is a `<button>`, so the generic `.tta button:hover/:active` rules
+ * (0,2,1) outweigh the two class rules above (0,2,0) and would wash their
+ * paint — the active band's gradient included — away under the pointer. Each
+ * band states its own hover and press ground at a weight that holds. */
+.tta .tta-band:hover,
+.tta .tta-band:active {
+  background: color-mix(in srgb, var(--tta-text) 10%, transparent);
+}
+
+.tta .tta-band-active:hover,
+.tta .tta-band-active:active {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--tta-section-glow) 72%, transparent),
+    color-mix(in srgb, var(--tta-section) 95%, transparent));
 }
 
 .tta .tta-band .tta-kicker {
