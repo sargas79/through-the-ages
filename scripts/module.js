@@ -26,6 +26,7 @@ const TEMPLATE_ROOT = `modules/${MODULE_ID}/templates`;
 
 const PARTIALS = [
   `${TEMPLATE_ROOT}/partials/calendar-day.hbs`,
+  `${TEMPLATE_ROOT}/partials/day-detail.hbs`,
   `${TEMPLATE_ROOT}/partials/note-list.hbs`,
   `${TEMPLATE_ROOT}/partials/timeline-event.hbs`
 ];

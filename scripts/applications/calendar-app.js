@@ -6,7 +6,7 @@
  * client. Only the GM time controls change the shared campaign date.
  */
 
-import { confirmDialog, enrichHTML, isDebug, log, promptForm, t } from "../compat.js";
+import { confirmDialog, enrichHTML, isDebug, log, promptForm, renderTemplate, t } from "../compat.js";
 import { MODULE_ID, SCOPE } from "../constants.js";
 import { endYear } from "../services/age-service.js";
 import {
@@ -80,6 +80,9 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
     this.filter = "all";
     this.timePreset = "minute";
   }
+
+  /** Ticket of the most recent detail repaint, used to discard stale ones. */
+  #detailPass = 0;
 
   static DEFAULT_OPTIONS = {
     classes: ["tta", "tta-app", "tta-calendar"],
@@ -250,15 +253,67 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
   _onRender(context, options) {
     super._onRender(context, options);
-    const filter = this.element.querySelector("[data-filter-select]");
-    filter?.addEventListener("change", event => {
-      this.filter = event.currentTarget.value;
-      this.render();
-    });
+    this.#bindDetailListeners();
     const preset = this.element.querySelector("[data-time-preset]");
     preset?.addEventListener("change", event => {
       this.timePreset = event.currentTarget.value;
     });
+  }
+
+  /**
+   * The filter select lives inside the detail panel, so its listener has to be
+   * re-attached whenever that panel is repainted on its own.
+   */
+  #bindDetailListeners() {
+    const filter = this.element.querySelector("[data-filter-select]");
+    filter?.addEventListener("change", event => {
+      this.filter = event.currentTarget.value;
+      this.#refreshDetail();
+    });
+  }
+
+  /**
+   * Repaint only the detail panel and the grid's selection marks. Selecting a
+   * day changes nothing else on screen, and a full render would rebuild the
+   * window underneath the pointer: the grid would flash, its scroll position
+   * would jump back to the top and the clicked day would lose focus.
+   *
+   * Preparing the context enriches note bodies, so two quick clicks can be in
+   * flight at once and the earlier one can finish last. Each pass takes a ticket
+   * and abandons its result if another pass has started meanwhile, so the panel
+   * always ends up showing the day the grid says is selected.
+   */
+  async #refreshDetail() {
+    const ticket = ++this.#detailPass;
+    try {
+      if (!this.rendered) return;
+      const context = await this._prepareContext({});
+      if (ticket !== this.#detailPass || !this.rendered) return;
+      const html = await renderTemplate(
+        `modules/${MODULE_ID}/templates/partials/day-detail.hbs`,
+        context
+      );
+      if (ticket !== this.#detailPass || !this.rendered) return;
+      const detail = this.element.querySelector(".tta-detail");
+      if (!detail) return;
+      detail.innerHTML = html;
+      this.#markSelectedDay();
+      this.#bindDetailListeners();
+    } catch (error) {
+      // A failed repaint leaves the previous panel in place: stale but readable,
+      // where a full render would recover it at the cost of the flash this whole
+      // path exists to avoid.
+      log("error", "Failed to refresh the calendar detail panel", error);
+    }
+  }
+
+  /** Move the selected-day styling and aria state to the current selection. */
+  #markSelectedDay() {
+    for (const button of this.element.querySelectorAll(".tta-day-button")) {
+      const isSelected = Number(button.dataset.day) === this.selectedDay;
+      button.setAttribute("aria-pressed", String(isSelected));
+      button.closest(".tta-day")?.classList.toggle("tta-day-selected", isSelected);
+    }
   }
 
   /** Move the browsing view without touching world time. */
@@ -294,9 +349,12 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
   static onSelectDay(event, target) {
     const day = Number(target.dataset.day);
-    if (!Number.isInteger(day)) return;
+    if (!Number.isInteger(day) || day === this.selectedDay) return;
     this.selectedDay = day;
-    this.render();
+    // Move the marks before awaiting anything, so the grid answers the click
+    // immediately even while the panel is still being built.
+    this.#markSelectedDay();
+    this.#refreshDetail();
   }
 
   static async onPrevDay() {

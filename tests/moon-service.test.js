@@ -161,9 +161,23 @@ describe("daysUntilPhase", () => {
     assert.equal(daysUntilPhase(moon, 14, 4), 0);
   });
 
-  it("counts forward to the next occurrence", () => {
+  // Phases are centred on their midpoint, so each one covers a band of days
+  // rather than a single day: on this 28-day, 8-phase moon "Full" runs from day
+  // 13 to day 15 and "New" from day 27 to day 1. The count is to the first day
+  // the moon reads as the target phase, which is what the grid already labels,
+  // not to the exact midpoint.
+  it("counts forward to the first day of the phase", () => {
     assert.equal(daysUntilPhase(moon, 0, 4), 13);
     assert.equal(daysUntilPhase(moon, 15, 0), 12);
+  });
+
+  it("agrees with the phase the day actually reads as", () => {
+    for (const target of [0, 2, 4, 6]) {
+      for (const start of [0, 5, 13, 27]) {
+        const arrival = start + daysUntilPhase(moon, start, target);
+        assert.equal(phaseIndex(moon, arrival), target);
+      }
+    }
   });
 
   it("wraps the target index", () => {

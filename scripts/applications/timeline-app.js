@@ -115,7 +115,7 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
       .filter(group => group.events.length > 0);
 
     const bands = this.#buildBands(age);
-    const ticks = this.#buildTicks(mode, calendar, current, age);
+    const ticks = this.#buildTicks(mode, calendar, current, age, events);
 
     return {
       bands,
@@ -176,12 +176,18 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
    * Ticks along the spine, positioned as a percentage of the browsed span.
    * A tick is drawn for the current position, for anything carrying an event,
    * and otherwise only at a regular interval, so a long Age stays legible.
+   *
+   * The marks come from the same filtered events the list below is built from,
+   * never from a fresh query: a spine that marked events the active filter has
+   * excluded would promise rows that are not there to find.
+   *
+   * @param {object[]} events the mode-scoped, filtered events being listed
    */
-  #buildTicks(mode, calendar, current, age) {
+  #buildTicks(mode, calendar, current, age, events) {
     const ticks = [];
 
     if (mode === TIMELINE_MODE.MONTH) {
-      const days = new Set(getEventsForMonth(this.viewYear, this.viewMonth).map(event => parseKey(event.dateKey)?.day));
+      const days = new Set(events.map(event => parseKey(event.dateKey)?.day));
       const inCurrentMonth = this.viewYear === current.year && this.viewMonth === current.month;
       for (let day = 1; day <= calendar.daysPerMonth; day++) {
         const hasEvent = days.has(day);
@@ -196,7 +202,7 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
     }
 
     if (mode === TIMELINE_MODE.YEAR) {
-      const months = new Set(getEventsForYear(this.viewYear).map(event => parseKey(event.dateKey)?.month));
+      const months = new Set(events.map(event => parseKey(event.dateKey)?.month));
       calendar.monthNames.forEach((name, index) => {
         const month = index + 1;
         ticks.push({
@@ -211,7 +217,7 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
     if (!age) return ticks;
 
-    const years = new Set(getEventsForAge(age).map(event => parseKey(event.dateKey)?.year));
+    const years = new Set(events.map(event => parseKey(event.dateKey)?.year));
     const start = Number(age.startYear);
     const last = endYear(age);
     const span = yearsInAge(age).length || 1;
