@@ -3,6 +3,12 @@ import { describe, it } from "node:test";
 
 import {
   addDays,
+  daysInMonth,
+  daysInYear,
+  maxDaysInMonth,
+  monthLengths,
+  monthStartOffset,
+  yearWithAffixes,
   addMonths,
   addSeconds,
   addYears,
@@ -23,6 +29,18 @@ import {
   weekdayIndex,
   weekdayName
 } from "../scripts/services/date-service.js";
+
+/**
+ * A calendar with festival months between the long ones, in the shape the
+ * bundled setting presets use: 30, 1, 30, 7 across four months.
+ */
+const FESTIVAL_CAL = {
+  monthsPerYear: 4,
+  daysPerMonth: 30,
+  monthNames: ["Long", "Feast", "Long Again", "Weeklong"],
+  monthLengths: [30, 1, 30, 7],
+  weekdayNames: ["A", "B", "C", "D", "E"]
+};
 
 /** A deliberately non-standard calendar: 10 months, 36 days, 3 weekdays. */
 const CAL = {
@@ -213,5 +231,112 @@ describe("month grid", () => {
       .filter(cell => cell.day !== null)
       .map(cell => cell.day);
     assert.deepEqual(days, Array.from({ length: CAL.daysPerMonth }, (_, i) => i + 1));
+  });
+});
+
+describe("months of differing lengths", () => {
+  it("reads each month's own length", () => {
+    assert.equal(daysInMonth(1, FESTIVAL_CAL), 30);
+    assert.equal(daysInMonth(2, FESTIVAL_CAL), 1);
+    assert.equal(daysInMonth(4, FESTIVAL_CAL), 7);
+    assert.deepEqual(monthLengths(FESTIVAL_CAL), [30, 1, 30, 7]);
+  });
+
+  it("falls back to the uniform length when none is stored", () => {
+    // Calendars written before variable lengths existed must not change dates.
+    assert.equal(daysInMonth(3, CAL), 36);
+    assert.equal(daysInYear(CAL), 360);
+    assert.deepEqual(monthLengths(CAL), Array(10).fill(36));
+  });
+
+  it("sums the year and finds the longest month", () => {
+    assert.equal(daysInYear(FESTIVAL_CAL), 68);
+    assert.equal(maxDaysInMonth(FESTIVAL_CAL), 30);
+  });
+
+  it("counts the days elapsed before a month begins", () => {
+    assert.equal(monthStartOffset(1, FESTIVAL_CAL), 0);
+    assert.equal(monthStartOffset(2, FESTIVAL_CAL), 30);
+    assert.equal(monthStartOffset(3, FESTIVAL_CAL), 31);
+    assert.equal(monthStartOffset(4, FESTIVAL_CAL), 61);
+  });
+
+  it("converts dates to absolute days across uneven months", () => {
+    assert.equal(toAbsoluteDay({ year: 1, month: 1, day: 1 }, FESTIVAL_CAL), 0);
+    assert.equal(toAbsoluteDay({ year: 1, month: 2, day: 1 }, FESTIVAL_CAL), 30);
+    assert.equal(toAbsoluteDay({ year: 1, month: 3, day: 1 }, FESTIVAL_CAL), 31);
+    assert.equal(toAbsoluteDay({ year: 2, month: 1, day: 1 }, FESTIVAL_CAL), 68);
+  });
+
+  it("round-trips every day of two years", () => {
+    for (let day = 0; day < daysInYear(FESTIVAL_CAL) * 2; day++) {
+      assert.equal(toAbsoluteDay(fromAbsoluteDay(day, FESTIVAL_CAL), FESTIVAL_CAL), day);
+    }
+  });
+
+  it("rejects a day past the end of its own month", () => {
+    assert.ok(isValidDate({ year: 1, month: 1, day: 30 }, FESTIVAL_CAL));
+    assert.ok(!isValidDate({ year: 1, month: 2, day: 2 }, FESTIVAL_CAL));
+    assert.ok(!isValidDate({ year: 1, month: 4, day: 8 }, FESTIVAL_CAL));
+  });
+
+  it("clamps an out-of-range day to its month, not to the longest month", () => {
+    assert.deepEqual(clampDate({ year: 1, month: 2, day: 30 }, FESTIVAL_CAL), { year: 1, month: 2, day: 1 });
+    assert.deepEqual(clampDate({ year: 1, month: 4, day: 30 }, FESTIVAL_CAL), { year: 1, month: 4, day: 7 });
+  });
+
+  it("pulls the day back when a month change would overflow", () => {
+    assert.deepEqual(addMonths({ year: 1, month: 1, day: 30 }, 1, FESTIVAL_CAL), { year: 1, month: 2, day: 1 });
+    assert.deepEqual(addMonths({ year: 1, month: 1, day: 30 }, 3, FESTIVAL_CAL), { year: 1, month: 4, day: 7 });
+  });
+
+  it("steps across a one-day festival month", () => {
+    assert.deepEqual(addDays({ year: 1, month: 1, day: 30 }, 1, FESTIVAL_CAL), { year: 1, month: 2, day: 1 });
+    assert.deepEqual(addDays({ year: 1, month: 1, day: 30 }, 2, FESTIVAL_CAL), { year: 1, month: 3, day: 1 });
+  });
+
+  it("builds a grid holding only that month's days", () => {
+    const grid = buildMonthGrid(1, 2, FESTIVAL_CAL);
+    const days = grid.weeks.flat().filter(cell => cell.day !== null);
+    assert.equal(days.length, 1);
+  });
+
+  it("keeps the weekday cycle running through a festival month", () => {
+    // Day 30 of month 1 and day 1 of month 2 are consecutive days, so their
+    // weekdays must be consecutive too.
+    const before = weekdayIndex({ year: 1, month: 1, day: 30 }, FESTIVAL_CAL);
+    const festival = weekdayIndex({ year: 1, month: 2, day: 1 }, FESTIVAL_CAL);
+    assert.equal(festival, (before + 1) % FESTIVAL_CAL.weekdayNames.length);
+  });
+});
+
+describe("weekdayOffset", () => {
+  it("shifts which weekday year one begins on", () => {
+    const shifted = { ...CAL, weekdayOffset: 2 };
+    assert.equal(weekdayIndex({ year: 1, month: 1, day: 1 }, CAL), 0);
+    assert.equal(weekdayIndex({ year: 1, month: 1, day: 1 }, shifted), 2);
+  });
+
+  it("keeps consecutive days consecutive", () => {
+    const shifted = { ...CAL, weekdayOffset: 2 };
+    assert.equal(weekdayName({ year: 1, month: 1, day: 2 }, shifted), "A");
+  });
+
+  it("treats a missing offset as zero", () => {
+    assert.equal(weekdayIndex({ year: 3, month: 4, day: 5 }, { ...CAL, weekdayOffset: undefined }),
+      weekdayIndex({ year: 3, month: 4, day: 5 }, CAL));
+  });
+});
+
+describe("yearWithAffixes", () => {
+  it("wraps the year in the configured era labels", () => {
+    assert.equal(yearWithAffixes(1495, { yearSuffix: "DR" }), "1495 DR");
+    assert.equal(yearWithAffixes(12, { yearPrefix: "Anno" }), "Anno 12");
+    assert.equal(yearWithAffixes(7, { yearPrefix: "Year", yearSuffix: "of the Kingdom" }), "Year 7 of the Kingdom");
+  });
+
+  it("returns null when the calendar sets neither", () => {
+    assert.equal(yearWithAffixes(1495, {}), null);
+    assert.equal(yearWithAffixes(1495, { yearPrefix: "  ", yearSuffix: "" }), null);
   });
 });

@@ -17,7 +17,8 @@ import {
   monthName,
   secondsUntilNextAdventureDay,
   toAbsoluteDay,
-  weekdayName
+  weekdayName,
+  yearWithAffixes
 } from "./date-service.js";
 import { describePhase, sortMoons, visibleMoons } from "./moon-service.js";
 import { migrateCalendarData, needsMigration } from "./migration-service.js";
@@ -251,11 +252,19 @@ export function onWorldTimeUpdated(worldTime) {
   rerenderModuleApps();
 }
 
+/**
+ * A year label honouring the calendar's era affixes, e.g. `1495 DR`.
+ * Calendars that set no affixes keep the plain localised wording.
+ */
+export function formatYear(year, calendar = getCalendar()) {
+  return yearWithAffixes(year, calendar) ?? t("TTA.Format.YearPlain", { year });
+}
+
 /** A human-readable date label using the configured month and weekday names. */
 export function formatDate(date, { withWeekday = true } = {}) {
   const calendar = getCalendar();
   const month = monthName(date.month, calendar);
-  const base = t("TTA.Format.Date", { day: date.day, month, year: date.year });
+  const base = t("TTA.Format.Date", { day: date.day, month, year: formatYear(date.year, calendar) });
   if (!withWeekday) return base;
   return t("TTA.Format.DateWithWeekday", { weekday: weekdayName(date, calendar), date: base });
 }
@@ -267,7 +276,8 @@ export function formatTime(time = getCurrentTime()) {
 
 /** A human-readable month label. */
 export function formatMonth(year, month) {
-  return t("TTA.Format.Month", { month: monthName(month, getCalendar()), year });
+  const calendar = getCalendar();
+  return t("TTA.Format.Month", { month: monthName(month, calendar), year: formatYear(year, calendar) });
 }
 
 /** Run the stored-data migration once, if needed. GM only; safe to call twice. */

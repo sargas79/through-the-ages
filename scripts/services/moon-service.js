@@ -4,8 +4,9 @@
  * Moons are plain objects:
  * `{ id, name, cycleLength, offset, phaseCount, color, showInGrid, playerVisible, sortOrder }`
  *
- * A moon's cycle is measured in whole calendar days and is independent of the
- * month length, so phases drift across months exactly as they do in nature.
+ * A moon's cycle is measured in calendar days, need not be a whole number, and
+ * is independent of the month length, so phases drift across months exactly as
+ * they do in nature.
  * `offset` is how many days into its cycle a moon already is on Year 1,
  * Month 1, Day 1, which is what lets a GM place several moons out of step.
  *
@@ -18,9 +19,18 @@ import {
   DEFAULT_MOON_NAMES,
   DEFAULT_MOON_PHASE_COUNT,
   LIMITS,
+  MOON_CYCLE_DECIMALS,
   MOON_PHASE_COUNTS,
   MOON_PHASE_KEYS
 } from "../constants.js";
+
+/** Clamp a cycle length to the supported range and precision. */
+export function clampCycleLength(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return LIMITS.MOON_CYCLE_MIN;
+  const bounded = Math.min(Math.max(n, LIMITS.MOON_CYCLE_MIN), LIMITS.MOON_CYCLE_MAX);
+  return Number(bounded.toFixed(MOON_CYCLE_DECIMALS));
+}
 
 /** Clamp a value to the allowed named-phase counts. */
 export function clampPhaseCount(value) {
@@ -30,13 +40,14 @@ export function clampPhaseCount(value) {
 
 /** Normalise a moon record, filling in derived and defaulted fields. */
 export function normalizeMoon(moon, index = 0) {
-  const rawCycle = Math.trunc(Number(moon?.cycleLength));
-  const cycleLength = Number.isFinite(rawCycle)
-    ? Math.min(Math.max(rawCycle, LIMITS.MOON_CYCLE_MIN), LIMITS.MOON_CYCLE_MAX)
-    : LIMITS.MOON_CYCLE_MIN;
+  const cycleLength = clampCycleLength(moon?.cycleLength);
 
+  // The offset stays a whole number of days: it answers "how far into its cycle
+  // was this moon on day one", which is only ever read against whole days.
   const rawOffset = Math.trunc(Number(moon?.offset));
-  const offset = Number.isFinite(rawOffset) ? ((rawOffset % cycleLength) + cycleLength) % cycleLength : 0;
+  const offset = Number.isFinite(rawOffset)
+    ? ((rawOffset % Math.ceil(cycleLength)) + Math.ceil(cycleLength)) % Math.ceil(cycleLength)
+    : 0;
 
   return {
     id: moon?.id ?? `moon-${index}`,
@@ -70,7 +81,7 @@ export function visibleMoons(moons = [], isGM = false) {
  * @returns {number} `0` at the new moon, rising to just under `1`
  */
 export function phaseFraction(moon, absoluteDay) {
-  const cycle = Number(moon.cycleLength);
+  const cycle = clampCycleLength(moon.cycleLength);
   const day = Math.trunc(Number(absoluteDay)) - Number(moon.offset ?? 0);
   return (((day % cycle) + cycle) % cycle) / cycle;
 }
@@ -123,6 +134,37 @@ export function isPhaseChange(moon, absoluteDay) {
 }
 
 /**
+ * The `offset` a moon needs in order to read as `targetIndex` on a given day —
+ * the inverse of {@link phaseIndex}, used to anchor a moon to a known event
+ * such as "Selune is full on Midsummer".
+ *
+ * Offsets are whole days while cycles need not be, so there is rarely an exact
+ * answer: every legal offset is tried and the one landing closest to the wanted
+ * point in the cycle wins. Cycles are capped at 1000 days, so this stays cheap.
+ */
+export function offsetForPhaseOnDay(moon, absoluteDay, targetIndex = 0) {
+  const cycle = clampCycleLength(moon.cycleLength);
+  const count = clampPhaseCount(moon.phaseCount);
+  const target = ((Math.trunc(Number(targetIndex)) % count) + count) % count;
+  const wanted = target / count;
+  const day = Math.trunc(Number(absoluteDay));
+
+  let best = 0;
+  let bestDistance = Infinity;
+  for (let offset = 0; offset < Math.ceil(cycle); offset++) {
+    const fraction = phaseFraction({ cycleLength: cycle, offset }, day);
+    // Circular distance: phase 0.99 is a hair before phase 0, not far after it.
+    const raw = Math.abs(fraction - wanted);
+    const distance = Math.min(raw, 1 - raw);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = offset;
+    }
+  }
+  return best;
+}
+
+/**
  * Whole days from `absoluteDay` until the moon next reaches a named phase.
  * Returns `0` when the moon is already in that phase today.
  */
@@ -130,7 +172,7 @@ export function daysUntilPhase(moon, absoluteDay, targetIndex) {
   const count = clampPhaseCount(moon.phaseCount);
   const target = ((Math.trunc(Number(targetIndex)) % count) + count) % count;
   const start = Math.trunc(Number(absoluteDay));
-  for (let i = 0; i < Number(moon.cycleLength); i++) {
+  for (let i = 0; i < Math.ceil(clampCycleLength(moon.cycleLength)); i++) {
     if (phaseIndex(moon, start + i) === target) return i;
   }
   return 0;

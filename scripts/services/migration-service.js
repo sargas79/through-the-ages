@@ -17,7 +17,7 @@ import {
   VISIBILITY
 } from "../constants.js";
 import { normalizeAge, sortAges } from "./age-service.js";
-import { compareDateKeys, parseKey } from "./date-service.js";
+import { compareDateKeys, daysInMonth, parseKey } from "./date-service.js";
 import { normalizeMoon, sortMoons } from "./moon-service.js";
 
 function clampInt(value, min, max, fallback) {
@@ -38,6 +38,25 @@ export function resizeNames(names, count, defaults, prefix) {
     result.push(existing || defaults[i] || `${prefix} ${i + 1}`);
   }
   return result;
+}
+
+/**
+ * Resize a per-month length list to `count`, preserving stored values and
+ * filling any shortfall with the calendar's uniform default. Calendars written
+ * before variable lengths existed have no list at all, so every month falls
+ * back to `daysPerMonth` and their dates are unchanged.
+ */
+export function resizeMonthLengths(lengths, count, uniform) {
+  const source = Array.isArray(lengths) ? lengths : [];
+  const fallback = clampInt(uniform, LIMITS.DAYS_MIN, LIMITS.DAYS_MAX, DEFAULT_CALENDAR_DATA.calendar.daysPerMonth);
+  const result = [];
+  for (let i = 0; i < count; i++) result.push(clampInt(source[i], LIMITS.DAYS_MIN, LIMITS.DAYS_MAX, fallback));
+  return result;
+}
+
+/** Trim a year prefix or suffix to a short, storable label. */
+export function normalizeYearAffix(value) {
+  return String(value ?? "").trim().slice(0, LIMITS.YEAR_AFFIX_MAX);
 }
 
 /**
@@ -76,19 +95,23 @@ export function migrateCalendarData(data) {
   );
 
   const monthNames = resizeNames(calendar.monthNames, monthsPerYear, DEFAULT_MONTH_NAMES, "Month");
+  const monthLengths = resizeMonthLengths(calendar.monthLengths, monthsPerYear, daysPerMonth);
   const weekdayNames = resizeNames(calendar.weekdayNames, weekdayCount, DEFAULT_WEEKDAY_NAMES, "Day");
 
   const rawDate = calendar.currentDate ?? defaults.currentDate;
+  const month = clampInt(rawDate?.month, 1, monthsPerYear, 1);
   const currentDate = {
     year: Math.max(LIMITS.YEAR_MIN, clampInt(rawDate?.year, LIMITS.YEAR_MIN, Number.MAX_SAFE_INTEGER, 1)),
-    month: clampInt(rawDate?.month, 1, monthsPerYear, 1),
-    day: clampInt(rawDate?.day, 1, daysPerMonth, 1)
+    month,
+    day: clampInt(rawDate?.day, 1, daysInMonth(month, { monthLengths, daysPerMonth }), 1)
   };
   const rawTime = calendar.currentTime ?? defaults.currentTime;
   const currentTime = {
     hour: clampInt(rawTime?.hour, 0, 23, 0),
     minute: clampInt(rawTime?.minute, 0, 59, 0)
   };
+
+  const weekdayOffset = clampInt(calendar.weekdayOffset, 0, weekdayCount - 1, 0);
 
   const moons = migrateMoons(calendar.moons);
 
@@ -97,7 +120,19 @@ export function migrateCalendarData(data) {
 
   return {
     schemaVersion: SCHEMA_VERSION,
-    calendar: { monthsPerYear, daysPerMonth, monthNames, weekdayNames, currentDate, currentTime, moons },
+    calendar: {
+      monthsPerYear,
+      daysPerMonth,
+      monthNames,
+      monthLengths,
+      weekdayNames,
+      weekdayOffset,
+      currentDate,
+      currentTime,
+      yearPrefix: normalizeYearAffix(calendar.yearPrefix),
+      yearSuffix: normalizeYearAffix(calendar.yearSuffix),
+      moons
+    },
     ages
   };
 }

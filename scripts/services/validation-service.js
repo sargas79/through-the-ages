@@ -8,7 +8,7 @@
 
 import { LIMITS, MOON_PHASE_COUNTS, SCOPE, VISIBILITY } from "../constants.js";
 import { endYear, findGaps, findOverlaps } from "./age-service.js";
-import { isValidDate, parseKey } from "./date-service.js";
+import { daysInMonth, isValidDate, maxDaysInMonth, monthLengths, parseKey } from "./date-service.js";
 
 function issue(code, data = {}) {
   return { code, data };
@@ -17,6 +17,11 @@ function issue(code, data = {}) {
 function isIntegerInRange(value, min, max) {
   const n = Number(value);
   return Number.isInteger(n) && n >= min && n <= max;
+}
+
+function isNumberInRange(value, min, max) {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= min && n <= max;
 }
 
 function duplicates(list) {
@@ -46,6 +51,25 @@ export function validateCalendarData(data) {
     errors.push(issue("daysRange", { min: LIMITS.DAYS_MIN, max: LIMITS.DAYS_MAX }));
   }
 
+  // A calendar may describe itself with `daysPerMonth` alone; only an explicit
+  // list has to be complete and in range.
+  const lengths = Array.isArray(calendar.monthLengths) ? calendar.monthLengths : [];
+  if (calendar.monthLengths !== undefined && !Array.isArray(calendar.monthLengths)) {
+    errors.push(issue("monthLengthCount", { expected: calendar.monthsPerYear, actual: 0 }));
+  } else if (lengths.length && lengths.length !== Number(calendar.monthsPerYear)) {
+    errors.push(issue("monthLengthCount", { expected: calendar.monthsPerYear, actual: lengths.length }));
+  }
+  const badLengths = lengths
+    .map((length, index) => ({ length, name: calendar.monthNames?.[index] ?? index + 1 }))
+    .filter(entry => !isIntegerInRange(entry.length, LIMITS.DAYS_MIN, LIMITS.DAYS_MAX));
+  if (badLengths.length) {
+    errors.push(issue("monthLengthRange", {
+      names: badLengths.map(entry => entry.name).join(", "),
+      min: LIMITS.DAYS_MIN,
+      max: LIMITS.DAYS_MAX
+    }));
+  }
+
   const monthNames = Array.isArray(calendar.monthNames) ? calendar.monthNames : [];
   const weekdayNames = Array.isArray(calendar.weekdayNames) ? calendar.weekdayNames : [];
 
@@ -58,6 +82,11 @@ export function validateCalendarData(data) {
   if (monthNames.some(name => !String(name ?? "").trim())) errors.push(issue("monthNameEmpty"));
   if (weekdayNames.some(name => !String(name ?? "").trim())) errors.push(issue("weekdayNameEmpty"));
 
+  if (calendar.weekdayOffset !== undefined
+    && !isIntegerInRange(calendar.weekdayOffset, 0, Math.max(weekdayNames.length - 1, 0))) {
+    errors.push(issue("weekdayOffsetRange", { max: Math.max(weekdayNames.length - 1, 0) }));
+  }
+
   const dupeMonths = duplicates(monthNames);
   if (dupeMonths.length) errors.push(issue("monthNameDuplicate", { names: dupeMonths.join(", ") }));
   const dupeWeekdays = duplicates(weekdayNames);
@@ -66,14 +95,19 @@ export function validateCalendarData(data) {
   const date = calendar.currentDate;
   if (!Number.isInteger(Number(date?.year)) || Number(date?.year) < LIMITS.YEAR_MIN) {
     errors.push(issue("yearMinimum", { min: LIMITS.YEAR_MIN }));
-  } else if (!isValidDate(
-    { year: Number(date.year), month: Number(date.month), day: Number(date.day) },
-    { monthsPerYear: Number(calendar.monthsPerYear), daysPerMonth: Number(calendar.daysPerMonth) }
-  )) {
-    errors.push(issue("currentDateOutOfRange", {
-      months: calendar.monthsPerYear,
-      days: calendar.daysPerMonth
-    }));
+  } else {
+    const probe = { year: Number(date.year), month: Number(date.month), day: Number(date.day) };
+    const shape = {
+      monthsPerYear: Number(calendar.monthsPerYear),
+      daysPerMonth: Number(calendar.daysPerMonth),
+      monthLengths: lengths
+    };
+    if (!isValidDate(probe, shape)) {
+      errors.push(issue("currentDateOutOfRange", {
+        months: calendar.monthsPerYear,
+        days: daysInMonth(probe.month, shape)
+      }));
+    }
   }
 
   const moonResult = validateMoons(calendar.moons ?? [], calendar);
@@ -85,6 +119,18 @@ export function validateCalendarData(data) {
   warnings.push(...ageResult.warnings);
 
   return { valid: errors.length === 0, errors, warnings };
+}
+
+/**
+ * True when a moon's cycle divides every month exactly, so it always shows the
+ * same phase on the same day of a month. Legal, and canon for settings such as
+ * Eberron, but rarely what a GM building a calendar by hand intends.
+ */
+function isLockedToMonths(moon, calendar) {
+  const cycle = Number(moon?.cycleLength);
+  if (!Number.isInteger(cycle) || cycle <= 0) return false;
+  const lengths = monthLengths(calendar);
+  return lengths.length > 0 && lengths.every(length => length > 0 && length % cycle === 0);
 }
 
 /**
@@ -107,30 +153,31 @@ export function validateMoons(moons = [], calendar = null) {
     errors.push(issue("moonCount", { max: LIMITS.MOONS_MAX, actual: moons.length }));
   }
 
+  const locked = [];
   for (const moon of moons) {
     const name = String(moon?.name ?? "").trim();
     if (!name) errors.push(issue("moonNameEmpty"));
 
-    if (!isIntegerInRange(moon?.cycleLength, LIMITS.MOON_CYCLE_MIN, LIMITS.MOON_CYCLE_MAX)) {
+    if (!isNumberInRange(moon?.cycleLength, LIMITS.MOON_CYCLE_MIN, LIMITS.MOON_CYCLE_MAX)) {
       errors.push(issue("moonCycleRange", {
         name,
         min: LIMITS.MOON_CYCLE_MIN,
         max: LIMITS.MOON_CYCLE_MAX
       }));
-    } else if (!isIntegerInRange(moon?.offset, 0, Number(moon.cycleLength) - 1)) {
-      errors.push(issue("moonOffsetRange", { name, max: Number(moon.cycleLength) - 1 }));
+    } else if (!isIntegerInRange(moon?.offset, 0, Math.ceil(Number(moon.cycleLength)) - 1)) {
+      errors.push(issue("moonOffsetRange", { name, max: Math.ceil(Number(moon.cycleLength)) - 1 }));
     }
 
     if (!MOON_PHASE_COUNTS.includes(Number(moon?.phaseCount))) {
       errors.push(issue("moonPhaseCount", { name, counts: MOON_PHASE_COUNTS.join(", ") }));
     }
 
-    const daysPerMonth = Number(calendar?.daysPerMonth);
-    const cycle = Number(moon?.cycleLength);
-    if (daysPerMonth > 0 && cycle > 0 && daysPerMonth % cycle === 0) {
-      warnings.push(issue("moonCycleLocked", { name, cycle, days: daysPerMonth }));
-    }
+    if (calendar && isLockedToMonths(moon, calendar)) locked.push(name);
   }
+
+  // One aggregated warning rather than one per moon: a setting where every moon
+  // is month-locked is a deliberate design, not a dozen separate mistakes.
+  if (locked.length) warnings.push(issue("moonCycleLocked", { names: locked.join(", ") }));
 
   const dupeNames = duplicates(moons.map(moon => moon?.name).filter(name => String(name ?? "").trim()));
   if (dupeNames.length) errors.push(issue("moonNameDuplicate", { names: dupeNames.join(", ") }));
@@ -189,8 +236,9 @@ export function structuralChangeWarnings(proposed, usage, previous = null) {
   if (Number(proposed.monthsPerYear) < Number(usage.maxMonth)) {
     warnings.push(issue("shrinkMonths", { months: proposed.monthsPerYear, used: usage.maxMonth, count: usage.count }));
   }
-  if (Number(proposed.daysPerMonth) < Number(usage.maxDay)) {
-    warnings.push(issue("shrinkDays", { days: proposed.daysPerMonth, used: usage.maxDay, count: usage.count }));
+  const longestMonth = maxDaysInMonth(proposed);
+  if (longestMonth < Number(usage.maxDay)) {
+    warnings.push(issue("shrinkDays", { days: longestMonth, used: usage.maxDay, count: usage.count }));
   }
   const previousWeekdays = previous?.weekdayNames?.length;
   if (previousWeekdays && previousWeekdays !== proposed.weekdayNames?.length) {

@@ -12,13 +12,14 @@ import { endYear, yearsInAge } from "../services/age-service.js";
 import {
   formatDate,
   formatMonth,
+  formatYear,
   getAgeForYear,
   getCalendar,
   getCurrentAge,
   getCurrentDate,
   getVisibleAges
 } from "../services/calendar-service.js";
-import { addMonths, addYears, parseKey } from "../services/date-service.js";
+import { addMonths, addYears, daysInMonth, parseKey } from "../services/date-service.js";
 import { getPromotableNotes } from "../services/note-service.js";
 import { canManageEvents, canViewTimeline, isGM } from "../services/permission-service.js";
 import {
@@ -115,7 +116,8 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
     // spine above already shows the shape of the span, so the list below only
     // carries the years that actually hold events.
     const grouped = groupEventsByYear(decorated, years, current.year)
-      .filter(group => group.events.length > 0);
+      .filter(group => group.events.length > 0)
+      .map(group => ({ ...group, yearLabel: formatYear(group.year, calendar) }));
 
     const bands = this.#buildBands(age);
     const ticks = this.#buildTicks(mode, calendar, current, age, events);
@@ -192,10 +194,11 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
     if (mode === TIMELINE_MODE.MONTH) {
       const days = new Set(events.map(event => parseKey(event.dateKey)?.day));
       const inCurrentMonth = this.viewYear === current.year && this.viewMonth === current.month;
-      for (let day = 1; day <= calendar.daysPerMonth; day++) {
+      const dayCount = daysInMonth(this.viewMonth, calendar);
+      for (let day = 1; day <= dayCount; day++) {
         const hasEvent = days.has(day);
         ticks.push({
-          position: (((day - 0.5) / calendar.daysPerMonth) * 100).toFixed(3),
+          position: (((day - 0.5) / dayCount) * 100).toFixed(3),
           label: (day % 5 === 0 || hasEvent) ? day : "",
           hasEvent,
           isCurrent: inCurrentMonth && day === current.day

@@ -234,7 +234,8 @@ describe("validateMoons", () => {
   it("bounds the cycle length", () => {
     assert.ok(codes(validateMoons([moonRecord({ cycleLength: 1 })])).includes("moonCycleRange"));
     assert.ok(codes(validateMoons([moonRecord({ cycleLength: 10000 })])).includes("moonCycleRange"));
-    assert.ok(codes(validateMoons([moonRecord({ cycleLength: 4.5 })])).includes("moonCycleRange"));
+    // Fractional cycles are legal: real moons rarely run a whole number of days.
+    assert.ok(validateMoons([moonRecord({ cycleLength: 29.53 })]).valid);
   });
 
   it("bounds the offset by the cycle length", () => {
@@ -264,5 +265,78 @@ describe("validateCalendarData with moons", () => {
 
   it("stays valid when no moons are configured", () => {
     assert.ok(validateCalendarData(validData()).valid);
+  });
+});
+
+describe("month lengths", () => {
+  function withLengths(calendar) {
+    return validateCalendarData(validData({ calendar }));
+  }
+
+  it("accepts a calendar described by daysPerMonth alone", () => {
+    // Uniform calendars need no explicit list, which is how pre-4 data reads.
+    assert.ok(validateCalendarData(validData()).valid);
+  });
+
+  it("accepts one length per month", () => {
+    assert.ok(withLengths({ monthLengths: [10, 1, 10] }).valid);
+  });
+
+  it("rejects a list that does not match the month count", () => {
+    assert.ok(codes(withLengths({ monthLengths: [10, 1] })).includes("monthLengthCount"));
+  });
+
+  it("rejects lengths outside the supported range", () => {
+    assert.ok(codes(withLengths({ monthLengths: [10, 0, 10] })).includes("monthLengthRange"));
+    assert.ok(codes(withLengths({ monthLengths: [10, 1, 500] })).includes("monthLengthRange"));
+  });
+
+  it("judges the current date against its own month", () => {
+    const result = withLengths({
+      monthLengths: [10, 1, 10],
+      currentDate: { year: 1, month: 2, day: 5 }
+    });
+    assert.ok(codes(result).includes("currentDateOutOfRange"));
+  });
+});
+
+describe("weekday offset", () => {
+  it("accepts an offset inside the weekday count", () => {
+    assert.ok(validateCalendarData(validData({ calendar: { weekdayOffset: 1 } })).valid);
+  });
+
+  it("rejects an offset past the last weekday", () => {
+    const result = validateCalendarData(validData({ calendar: { weekdayOffset: 2 } }));
+    assert.ok(codes(result).includes("weekdayOffsetRange"));
+  });
+});
+
+describe("moons at the raised limit", () => {
+  function moons(count) {
+    return Array.from({ length: count }, (_, i) => moonRecord({ id: `m${i}`, name: `Moon ${i}` }));
+  }
+
+  it("accepts a full set of twelve", () => {
+    assert.equal(LIMITS.MOONS_MAX, 12);
+    assert.ok(validateMoons(moons(12)).valid);
+  });
+
+  it("still rejects one moon too many", () => {
+    assert.ok(codes(validateMoons(moons(13))).includes("moonCount"));
+  });
+
+  it("names every month-locked moon in a single warning", () => {
+    const calendar = { monthsPerYear: 2, daysPerMonth: 28, monthLengths: [28, 28] };
+    const result = validateMoons(moons(3), calendar);
+    const locked = result.warnings.filter(warning => warning.code === "moonCycleLocked");
+    assert.equal(locked.length, 1);
+    assert.equal(locked[0].data.names, "Moon 0, Moon 1, Moon 2");
+  });
+
+  it("does not call a moon locked when it drifts against a festival month", () => {
+    const calendar = { monthsPerYear: 2, daysPerMonth: 28, monthLengths: [28, 5] };
+    const locked = validateMoons(moons(1), calendar).warnings
+      .filter(warning => warning.code === "moonCycleLocked");
+    assert.equal(locked.length, 0);
   });
 });

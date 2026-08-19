@@ -14,6 +14,7 @@ import * as journalService from "./services/journal-service.js";
 import * as moonService from "./services/moon-service.js";
 import * as noteService from "./services/note-service.js";
 import * as portabilityService from "./services/portability-service.js";
+import * as presetService from "./services/preset-service.js";
 import * as timelineService from "./services/timeline-service.js";
 import { CalendarApp } from "./applications/calendar-app.js";
 import { CalendarConfigApp } from "./applications/calendar-config-app.js";
@@ -41,6 +42,40 @@ async function importCalendar(jsonText, { applyEvents = true } = {}) {
   if (!saved) return null;
   if (applyEvents && Array.isArray(parsed.events)) await timelineService.replaceEvents(parsed.events);
   ui.notifications.info(t("TTA.Notifications.CalendarImported"));
+  return saved;
+}
+
+/**
+ * Apply a bundled setting calendar directly. GM only.
+ *
+ * The configuration window stages a preset for review instead; this entry point
+ * exists for macros and world-setup scripts that know what they are replacing.
+ * Holidays are opt-in for the same reason they are a checkbox in the window:
+ * they create journal pages.
+ *
+ * @param {string} id                          preset identifier
+ * @param {{createHolidays?:boolean}} options
+ * @returns {Promise<object|null>} the stored data, or null when refused
+ */
+async function applyPreset(id, { createHolidays = false } = {}) {
+  const data = presetService.buildPresetData(id);
+  if (!data) {
+    ui.notifications.error(t("TTA.Presets.SelectFirst"));
+    return null;
+  }
+
+  const saved = await calendarService.saveData(data);
+  if (!saved) return null;
+
+  if (createHolidays) {
+    let created = 0;
+    for (const holiday of presetService.buildPresetHolidays(id)) {
+      if (await noteService.createNote(holiday)) created += 1;
+    }
+    ui.notifications.info(t("TTA.Presets.HolidaysCreated", { count: created }));
+  }
+
+  ui.notifications.info(t("TTA.Presets.Loaded", { name: t(presetService.presetKeys(id).label) }));
   return saved;
 }
 
@@ -84,6 +119,15 @@ export function buildApi() {
     updateEvent: timelineService.updateEvent,
     deleteEvent: timelineService.deleteEvent,
     promoteNote: timelineService.promoteNote,
+
+    // Setting presets
+    listPresets: () => presetService.PRESET_IDS.map(id => ({
+      id,
+      label: t(presetService.presetKeys(id).label),
+      description: t(presetService.presetKeys(id).description)
+    })),
+    buildPresetData: presetService.buildPresetData,
+    applyPreset,
 
     // Export and import
     exportCalendar: portabilityService.buildExport,
