@@ -5,7 +5,7 @@
  * and companion modules never have to reach into internals.
  */
 
-import { t } from "./compat.js";
+import { log, t } from "./compat.js";
 import { MODULE_ID } from "./constants.js";
 import * as ageService from "./services/age-service.js";
 import * as calendarService from "./services/calendar-service.js";
@@ -68,9 +68,16 @@ async function applyPreset(id, { createHolidays = false } = {}) {
   if (!saved) return null;
 
   if (createHolidays) {
+    // The calendar is already saved by this point, so a note that will not write
+    // is reported and stepped over rather than thrown back at the caller in a
+    // half-applied state.
     let created = 0;
     for (const holiday of presetService.buildPresetHolidays(id)) {
-      if (await noteService.createNote(holiday)) created += 1;
+      try {
+        if (await noteService.createNote(holiday)) created += 1;
+      } catch (error) {
+        log("error", "Failed to create a preset holiday note", holiday, error);
+      }
     }
     ui.notifications.info(t("TTA.Presets.HolidaysCreated", { count: created }));
   }

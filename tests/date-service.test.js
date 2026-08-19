@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { LIMITS } from "../scripts/constants.js";
 import {
   addDays,
   daysInMonth,
@@ -240,6 +241,15 @@ describe("months of differing lengths", () => {
     assert.equal(daysInMonth(2, FESTIVAL_CAL), 1);
     assert.equal(daysInMonth(4, FESTIVAL_CAL), 7);
     assert.deepEqual(monthLengths(FESTIVAL_CAL), [30, 1, 30, 7]);
+  });
+
+  it("holds an out-of-range length inside the supported bounds", () => {
+    // Reachable from the public API and from other modules, where nothing has
+    // clamped the value first; an absurd length must not build an absurd grid.
+    const corrupt = { ...FESTIVAL_CAL, monthLengths: [9999, 1, 30, 7] };
+    assert.equal(daysInMonth(1, corrupt), LIMITS.DAYS_MAX);
+    assert.equal(buildMonthGrid(1, 1, corrupt).weeks.flat().filter(cell => cell.day !== null).length, LIMITS.DAYS_MAX);
+    assert.equal(daysInMonth(1, { monthsPerYear: 1, daysPerMonth: 9999 }), LIMITS.DAYS_MAX);
   });
 
   it("falls back to the uniform length when none is stored", () => {

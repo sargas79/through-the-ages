@@ -51,12 +51,12 @@ export function validateCalendarData(data) {
     errors.push(issue("daysRange", { min: LIMITS.DAYS_MIN, max: LIMITS.DAYS_MAX }));
   }
 
-  // A calendar may describe itself with `daysPerMonth` alone; only an explicit
-  // list has to be complete and in range.
+  // A calendar may describe itself with `daysPerMonth` alone, which is how data
+  // written before variable lengths reads. Once a list is given at all it has to
+  // be complete: an empty one is no more a description of twelve months than a
+  // short one is.
   const lengths = Array.isArray(calendar.monthLengths) ? calendar.monthLengths : [];
-  if (calendar.monthLengths !== undefined && !Array.isArray(calendar.monthLengths)) {
-    errors.push(issue("monthLengthCount", { expected: calendar.monthsPerYear, actual: 0 }));
-  } else if (lengths.length && lengths.length !== Number(calendar.monthsPerYear)) {
+  if (calendar.monthLengths !== undefined && lengths.length !== Number(calendar.monthsPerYear)) {
     errors.push(issue("monthLengthCount", { expected: calendar.monthsPerYear, actual: lengths.length }));
   }
   const badLengths = lengths

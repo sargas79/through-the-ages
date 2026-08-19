@@ -133,6 +133,18 @@ export function secondsUntilNextAdventureDay(time) {
 }
 
 /**
+ * Hold a month length inside the supported range.
+ *
+ * Stored data is clamped on the way in, but this layer is also reachable from
+ * the public API and from a calendar hand-built by another module. An absurd
+ * length here would have {@link buildMonthGrid} allocate an absurd grid, so the
+ * bound is enforced where the value is read rather than trusted.
+ */
+function clampMonthLength(days) {
+  return Math.min(Math.max(days, LIMITS.DAYS_MIN), LIMITS.DAYS_MAX);
+}
+
+/**
  * Length of a single month (1-based) in days.
  * Falls back to the uniform `daysPerMonth` when no explicit length is stored.
  */
@@ -140,9 +152,9 @@ export function daysInMonth(month, calendar) {
   const explicit = Array.isArray(calendar?.monthLengths)
     ? Math.trunc(Number(calendar.monthLengths[Math.trunc(Number(month)) - 1]))
     : NaN;
-  if (Number.isFinite(explicit) && explicit >= LIMITS.DAYS_MIN) return explicit;
+  if (Number.isFinite(explicit) && explicit >= LIMITS.DAYS_MIN) return clampMonthLength(explicit);
   const uniform = Math.trunc(Number(calendar?.daysPerMonth));
-  return Number.isFinite(uniform) && uniform >= LIMITS.DAYS_MIN ? uniform : LIMITS.DAYS_MIN;
+  return Number.isFinite(uniform) && uniform >= LIMITS.DAYS_MIN ? clampMonthLength(uniform) : LIMITS.DAYS_MIN;
 }
 
 /** The length of every month, in order. */

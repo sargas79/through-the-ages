@@ -286,6 +286,14 @@ describe("month lengths", () => {
     assert.ok(codes(withLengths({ monthLengths: [10, 1] })).includes("monthLengthCount"));
   });
 
+  it("rejects an empty list, which describes no months at all", () => {
+    assert.ok(codes(withLengths({ monthLengths: [] })).includes("monthLengthCount"));
+  });
+
+  it("rejects a list that is not a list", () => {
+    assert.ok(codes(withLengths({ monthLengths: 30 })).includes("monthLengthCount"));
+  });
+
   it("rejects lengths outside the supported range", () => {
     assert.ok(codes(withLengths({ monthLengths: [10, 0, 10] })).includes("monthLengthRange"));
     assert.ok(codes(withLengths({ monthLengths: [10, 1, 500] })).includes("monthLengthRange"));
