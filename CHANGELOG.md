@@ -4,6 +4,14 @@ All notable changes to Through the Ages are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- The month grid draws a moon disc only on the day a moon turns over into a new
+  named phase, instead of on every day. The day and month detail panel is
+  unchanged and still reports the phase for whichever day is selected.
+
 ## [2.0.0] - 2026-08-19
 
 The first release submitted to the Foundry VTT package directory. No behaviour
