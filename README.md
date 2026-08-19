@@ -42,7 +42,10 @@ automation of their own.
 
 ## Installation
 
-**From a manifest URL** — in Foundry, go to *Add-on Modules → Install Module* and paste:
+**From the package directory** — search for **Through the Ages** in Foundry's
+*Add-on Modules → Install Module* browser.
+
+**From a manifest URL** — in the same dialog, paste:
 
 ```
 https://github.com/sargas79/through-the-ages/releases/latest/download/module.json
@@ -260,7 +263,15 @@ crashing the view.
 
 ```bash
 npm test
+node tools/check-manifest.mjs
 ```
+
+`check-manifest.mjs` guards the packaging mistakes that stay invisible until a
+release is already published: a missing field, an id that is not a valid package
+slug, `module.json`, `package.json` and the `download` URL disagreeing on the
+version, no cover image for the directory listing, or a script, stylesheet or
+language file that the manifest declares but the tree does not hold. CI runs it on
+every push and pull request, and the release workflow runs it before it builds.
 
 The pure services — date arithmetic, Ages, validation, migrations — carry unit tests
 under `tests/` and run under `node --test` with no Foundry runtime. UI, journal, and
@@ -274,6 +285,32 @@ The public API is available at `game.modules.get("through-the-ages").api`.
 
 Foundry VTT v14, minimum and verified build **14.366**. System-agnostic: this module
 uses only Foundry's public world-time API and has no game-system dependencies.
+
+---
+
+## Releasing
+
+The published version comes from the git tag and nothing else.
+
+1. Land the release's changes on `main`, with their entries under a
+   `## [Unreleased]` heading in the CHANGELOG — or under `## [X.Y.Z] - YYYY-MM-DD`
+   when the number is already decided.
+2. Set the same `X.Y.Z` in `module.json` (both `version` and the `download` URL) and
+   in `package.json`, then run `node tools/check-manifest.mjs`.
+3. Tag `vX.Y.Z` and push it.
+
+The release workflow runs the tests and the manifest check, stamps the tag's version
+onto `module.json`, reconciles the CHANGELOG — renaming `[Unreleased]` to the tag's
+version, or refusing outright if the newest section names a different one — and
+publishes `module.zip` and `module.json` as release assets, with that changelog
+section as the release notes.
+
+The `manifest` URL never changes: it always resolves to the newest release's
+`module.json`, which is the URL registered with the Foundry package directory.
+
+The `assets/` artwork is deliberately not in the archive. It is linked from the
+repository by the manifest's `media` entries, which the directory reads, and would
+otherwise pad every install.
 
 ## Licence
 
