@@ -4,6 +4,27 @@ All notable changes to Through the Ages are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-08-19
+
+The first release submitted to the Foundry VTT package directory. No behaviour
+changes: everything here is packaging.
+
+### Added
+
+- Cover and icon artwork, declared as `media` in the manifest so the directory
+  listing has something to show. Both are linked from the repository and left out of
+  `module.zip` — they are listing artwork, not runtime assets.
+- `tools/check-manifest.mjs`, which fails the build if the manifest is missing a
+  field Foundry needs, if its id is not a valid package slug, if `module.json`,
+  `package.json` and the `download` URL disagree on the version, if there is no
+  cover, or if it declares a script, stylesheet or language file that is not in the
+  tree. A CI workflow runs it, and the unit tests, on every push and pull request.
+
+### Fixed
+
+- The manifest's `license` field held the literal string `LICENSE`, which the
+  package page would have shown verbatim. It names the licence, MIT.
+
 ## [1.0.8] - 2026-08-19
 
 ### Fixed
@@ -203,6 +224,7 @@ Initial release, targeting Foundry VTT v14 build 366.
 - Full English localisation and a versioned, idempotent data-migration framework.
 - Public API at `game.modules.get("through-the-ages").api`.
 
+[2.0.0]: https://github.com/sargas79/through-the-ages/releases/tag/v2.0.0
 [1.0.8]: https://github.com/sargas79/through-the-ages/releases/tag/v1.0.8
 [1.0.7]: https://github.com/sargas79/through-the-ages/releases/tag/v1.0.7
 [1.0.6]: https://github.com/sargas79/through-the-ages/releases/tag/v1.0.6

@@ -1,6 +1,6 @@
 {
   "name": "through-the-ages",
-  "version": "1.0.8",
+  "version": "2.0.0",
   "description": "Foundry VTT world calendar and campaign timeline module.",
   "private": true,
   "type": "module",
