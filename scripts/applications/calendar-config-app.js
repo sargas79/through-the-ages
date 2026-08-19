@@ -21,12 +21,14 @@ import {
 } from "../constants.js";
 import { endYear, sortAges } from "../services/age-service.js";
 import { getData, saveData } from "../services/calendar-service.js";
-import { toAbsoluteDay } from "../services/date-service.js";
+import { daysInMonth, toAbsoluteDay, yearWithAffixes } from "../services/date-service.js";
 import * as journal from "../services/journal-service.js";
-import { migrateCalendarData, resizeNames } from "../services/migration-service.js";
-import { describePhase, sortMoons } from "../services/moon-service.js";
+import * as note from "../services/note-service.js";
+import { migrateCalendarData, resizeMonthLengths, resizeNames } from "../services/migration-service.js";
+import { clampCycleLength, describePhase, sortMoons } from "../services/moon-service.js";
 import { canConfigureCalendar } from "../services/permission-service.js";
 import * as portability from "../services/portability-service.js";
+import * as presets from "../services/preset-service.js";
 import * as timeline from "../services/timeline-service.js";
 import { structuralChangeWarnings, validateCalendarData } from "../services/validation-service.js";
 
@@ -38,6 +40,10 @@ export class CalendarConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
     this.draft = migrateCalendarData(getData());
     /** Events staged by an import, written only when the form is submitted. */
     this.pendingEvents = null;
+    /** Holiday notes staged by a preset, created only when the form is submitted. */
+    this.pendingHolidays = null;
+    /** The preset id showing in the picker, kept across re-renders. */
+    this.presetId = "";
   }
 
   static DEFAULT_OPTIONS = {
@@ -65,6 +71,9 @@ export class CalendarConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
       removeMoon: CalendarConfigApp.onRemoveMoon,
       moveMoonUp: CalendarConfigApp.onMoveMoonUp,
       moveMoonDown: CalendarConfigApp.onMoveMoonDown,
+      loadPreset: CalendarConfigApp.onLoadPreset,
+      discardHolidays: CalendarConfigApp.onDiscardHolidays,
+      uniformDays: CalendarConfigApp.onUniformDays,
       exportCalendar: CalendarConfigApp.onExportCalendar,
       importCalendar: CalendarConfigApp.onImportCalendar,
       discardImport: CalendarConfigApp.onDiscardImport
@@ -86,8 +95,29 @@ export class CalendarConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
       calendar,
       limits: LIMITS,
       weekdayCount: calendar.weekdayNames.length,
-      monthNames: calendar.monthNames.map((name, index) => ({ index, number: index + 1, name })),
+      monthNames: calendar.monthNames.map((name, index) => ({
+        index,
+        number: index + 1,
+        name,
+        length: daysInMonth(index + 1, calendar)
+      })),
       weekdayNames: calendar.weekdayNames.map((name, index) => ({ index, number: index + 1, name })),
+      weekdayChoices: calendar.weekdayNames.map((name, index) => ({
+        value: index,
+        label: name,
+        selected: index === (calendar.weekdayOffset ?? 0)
+      })),
+      currentMonthDays: daysInMonth(calendar.currentDate.month, calendar),
+      yearPreview: yearWithAffixes(calendar.currentDate.year, calendar)
+        ?? t("TTA.Format.YearPlain", { year: calendar.currentDate.year }),
+      presetChoices: presets.PRESET_IDS.map(id => ({
+        value: id,
+        label: t(presets.presetKeys(id).label),
+        selected: id === this.presetId
+      })),
+      presetDescription: this.presetId ? t(presets.presetKeys(this.presetId).description) : "",
+      pendingHolidayCount: this.pendingHolidays?.length ?? null,
+      hasPendingHolidays: Array.isArray(this.pendingHolidays) && this.pendingHolidays.length > 0,
       monthChoices: calendar.monthNames.map((name, index) => ({
         value: index + 1,
         label: name,
@@ -117,6 +147,7 @@ export class CalendarConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
     const phase = describePhase(moon, toAbsoluteDay(calendar.currentDate, calendar));
     return {
       ...moon,
+      offsetMax: Math.ceil(moon.cycleLength) - 1,
       phaseLabel: t(`TTA.Moons.Phase.${phase.phaseKey}`),
       illumination: phase.illumination,
       terminator: phase.terminator,
@@ -134,6 +165,16 @@ export class CalendarConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
     super._onRender(context, options);
     for (const input of this.element.querySelectorAll("[data-structure]")) {
       input.addEventListener("change", this.#onStructureChange.bind(this));
+    }
+
+    const picker = this.element.querySelector("[data-preset-select]");
+    if (picker) {
+      picker.value = this.presetId;
+      picker.addEventListener("change", () => {
+        this.presetId = picker.value;
+        const hint = this.element.querySelector("[data-preset-description]");
+        if (hint) hint.textContent = this.presetId ? t(presets.presetKeys(this.presetId).description) : "";
+      });
     }
   }
 
@@ -159,19 +200,26 @@ export class CalendarConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
     const weekdayCount = Math.min(Math.max(number("[name='weekdayCount']", previous.weekdayNames.length), LIMITS.WEEKDAYS_MIN), LIMITS.WEEKDAYS_MAX);
 
     const monthNames = [...root.querySelectorAll("[data-month-name]")].map(input => input.value);
+    const monthLengths = resizeMonthLengths(
+      [...root.querySelectorAll("[data-month-days]")].map(input => Number(input.value)),
+      monthsPerYear,
+      daysPerMonth
+    );
     const weekdayNames = [...root.querySelectorAll("[data-weekday-name]")].map(input => input.value);
+    const weekdayOffset = Math.min(Math.max(number("[name='weekdayOffset']", previous.weekdayOffset ?? 0), 0), weekdayCount - 1);
+    const text = (selector, fallback) => root.querySelector(selector)?.value ?? fallback;
 
     const moons = [...root.querySelectorAll("[data-moon-row]")].map((row, index) => {
-      const cycleLength = Math.min(
-        Math.max(Number(row.querySelector("[data-field='cycleLength']")?.value) || LIMITS.MOON_CYCLE_MIN, LIMITS.MOON_CYCLE_MIN),
-        LIMITS.MOON_CYCLE_MAX
-      );
+      const cycleLength = clampCycleLength(row.querySelector("[data-field='cycleLength']")?.value);
+      // The offset is whole days into a cycle that need not be a whole number,
+      // so it wraps at the cycle's last day rather than at the cycle itself.
+      const wrapAt = Math.ceil(cycleLength);
       const rawOffset = Math.trunc(Number(row.querySelector("[data-field='offset']")?.value)) || 0;
       return {
         id: row.dataset.moonId,
         name: row.querySelector("[data-field='name']")?.value ?? "",
         cycleLength,
-        offset: ((rawOffset % cycleLength) + cycleLength) % cycleLength,
+        offset: ((rawOffset % wrapAt) + wrapAt) % wrapAt,
         phaseCount: Number(row.querySelector("[data-field='phaseCount']")?.value) || DEFAULT_MOON_PHASE_COUNT,
         color: row.querySelector("[data-field='color']")?.value || DEFAULT_MOON_COLOR,
         showInGrid: row.querySelector("[data-field='showInGrid']")?.checked ?? true,
@@ -179,6 +227,8 @@ export class CalendarConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
         sortOrder: index
       };
     });
+
+    const currentMonth = Math.min(Math.max(1, number("[name='currentMonth']", previous.currentDate.month)), monthsPerYear);
 
     const ages = [...root.querySelectorAll("[data-age-row]")].map((row, index) => ({
       id: row.dataset.ageId,
@@ -197,13 +247,17 @@ export class CalendarConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
         monthsPerYear,
         daysPerMonth,
         monthNames: resizeNames(monthNames, monthsPerYear, DEFAULT_MONTH_NAMES, t("TTA.Config.MonthFallback")),
+        monthLengths,
         weekdayNames: resizeNames(weekdayNames, weekdayCount, DEFAULT_WEEKDAY_NAMES, t("TTA.Config.WeekdayFallback")),
+        weekdayOffset,
         currentDate: {
           year: Math.max(LIMITS.YEAR_MIN, number("[name='currentYear']", previous.currentDate.year)),
-          month: Math.min(Math.max(1, number("[name='currentMonth']", previous.currentDate.month)), monthsPerYear),
-          day: Math.min(Math.max(1, number("[name='currentDay']", previous.currentDate.day)), daysPerMonth)
+          month: currentMonth,
+          day: Math.min(Math.max(1, number("[name='currentDay']", previous.currentDate.day)), monthLengths[currentMonth - 1])
         },
         currentTime: previous.currentTime,
+        yearPrefix: text("[name='yearPrefix']", previous.yearPrefix ?? ""),
+        yearSuffix: text("[name='yearSuffix']", previous.yearSuffix ?? ""),
         moons
       },
       ages
@@ -331,6 +385,75 @@ export class CalendarConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
     this.render();
   }
 
+  /**
+   * Load a bundled setting calendar into the draft.
+   *
+   * This deliberately mirrors the JSON import below: the preset replaces the
+   * draft and stages its holidays, but nothing reaches the world until the GM
+   * reviews the result and saves.
+   */
+  static async onLoadPreset() {
+    if (!canConfigureCalendar()) {
+      ui.notifications.warn(t("TTA.Errors.GMOnly"));
+      return;
+    }
+
+    this.#readForm();
+    const id = this.element?.querySelector("[data-preset-select]")?.value ?? "";
+    const preset = presets.getPreset(id);
+    if (!preset) {
+      ui.notifications.warn(t("TTA.Presets.SelectFirst"));
+      return;
+    }
+
+    const keys = presets.presetKeys(id);
+    const data = presets.buildPresetData(id);
+    const wantsHolidays = this.element?.querySelector("[data-preset-holidays]")?.checked ?? true;
+    const holidays = wantsHolidays ? presets.buildPresetHolidays(id) : [];
+
+    const summary = portability.summarizeImport({ data }, getData());
+    const rows = [
+      t("TTA.Import.RowMonths", summary.months),
+      t("TTA.Import.RowYearLength", summary.yearLength),
+      t("TTA.Import.RowWeekdays", summary.weekdays),
+      t("TTA.Import.RowMoons", summary.moons),
+      t("TTA.Import.RowAges", summary.ages),
+      t("TTA.Presets.RowHolidays", { count: holidays.length })
+    ];
+    const caveats = (preset.caveats ?? []).map(key => `<li>${t(key)}</li>`).join("");
+
+    const confirmed = await confirmDialog({
+      title: t("TTA.Presets.ConfirmTitle"),
+      content: `<p>${t("TTA.Presets.ConfirmBody", { name: t(keys.label) })}</p>`
+        + `<ul>${rows.map(row => `<li>${row}</li>`).join("")}</ul>`
+        + (caveats ? `<p class="notification warning">${t("TTA.Presets.CaveatsHeading")}</p><ul>${caveats}</ul>` : "")
+        + `<p>${t("TTA.Import.ReviewHint")}</p>`,
+      yesLabel: t("TTA.Presets.Load")
+    });
+    if (!confirmed) return;
+
+    this.draft = data;
+    this.presetId = id;
+    this.pendingHolidays = holidays.length ? holidays : null;
+    ui.notifications.info(t("TTA.Presets.Loaded", { name: t(keys.label) }));
+    this.render();
+  }
+
+  /** Drop staged holiday notes without touching the loaded calendar draft. */
+  static async onDiscardHolidays() {
+    this.#readForm();
+    this.pendingHolidays = null;
+    this.render();
+  }
+
+  /** Give every month the same length, taken from the default days field. */
+  static async onUniformDays() {
+    this.#readForm();
+    const { daysPerMonth, monthsPerYear } = this.draft.calendar;
+    this.draft.calendar.monthLengths = Array(monthsPerYear).fill(daysPerMonth);
+    this.render();
+  }
+
   /** Download the draft as a JSON file, optionally with the stored events. */
   static async onExportCalendar() {
     this.#readForm();
@@ -376,7 +499,7 @@ export class CalendarConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
     const summary = portability.summarizeImport(parsed, getData());
     const rows = [
       t("TTA.Import.RowMonths", summary.months),
-      t("TTA.Import.RowDays", summary.days),
+      t("TTA.Import.RowYearLength", summary.yearLength),
       t("TTA.Import.RowWeekdays", summary.weekdays),
       t("TTA.Import.RowMoons", summary.moons),
       t("TTA.Import.RowAges", summary.ages)
@@ -407,6 +530,25 @@ export class CalendarConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
   static async onDiscardImport() {
     this.pendingEvents = null;
     this.render();
+  }
+
+  /**
+   * Create the staged holiday notes as ordinary calendar notes.
+   *
+   * Failures are logged and counted rather than thrown: a single bad page
+   * should not abandon a configuration the GM has already saved.
+   */
+  async #createStagedHolidays() {
+    let created = 0;
+    for (const holiday of this.pendingHolidays) {
+      try {
+        const page = await note.createNote(holiday);
+        if (page) created += 1;
+      } catch (error) {
+        log("error", "Failed to create a preset holiday note", holiday, error);
+      }
+    }
+    return created;
   }
 
   /** Prompt for a single JSON file, resolving null when the GM cancels. */
@@ -491,6 +633,11 @@ export class CalendarConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
         this.pendingEvents = null;
       }
       await journal.ensureFolder();
+      if (Array.isArray(this.pendingHolidays)) {
+        const created = await this.#createStagedHolidays();
+        this.pendingHolidays = null;
+        ui.notifications.info(t("TTA.Presets.HolidaysCreated", { count: created }));
+      }
       ui.notifications.info(t("TTA.Notifications.ConfigSaved"));
       this.render();
     } catch (error) {

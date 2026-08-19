@@ -148,6 +148,8 @@ describe("summarizeImport", () => {
     const parsed = parseImport(exportText());
     const summary = summarizeImport(parsed, migrateCalendarData(DEFAULT_CALENDAR_DATA));
     assert.deepEqual(summary.months, { from: 12, to: 10 });
+    assert.equal(summary.yearLength.from, 360);
+    assert.ok(Number.isInteger(summary.yearLength.to));
     assert.deepEqual(summary.moons, { from: 0, to: 1 });
     assert.deepEqual(summary.ages, { from: 0, to: 1 });
     assert.equal(summary.events, 1);

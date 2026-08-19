@@ -18,9 +18,10 @@
       "YearRange": "Years"
     },
     "Format": {
-      "Date": "{day} {month}, Year {year}",
+      "Date": "{day} {month}, {year}",
       "DateWithWeekday": "{weekday}, {date}",
-      "Month": "{month}, Year {year}"
+      "Month": "{month}, {year}",
+      "YearPlain": "Year {year}"
     },
     "Visibility": {
       "gm-only": "GM only",
@@ -199,16 +200,22 @@
       "AgesHeading": "Ages",
       "AgesHint": "Ages are named eras covering a contiguous span of years. They may not overlap.",
       "ApplyAnyway": "Apply Anyway",
+      "ApplyToAllMonths": "Apply to all months",
       "Breadcrumb": "Game Settings ▸ Configure Settings ▸ Module Settings ▸ Through the Ages ▸",
       "ConfirmChangesBody": "These changes affect existing calendar content:",
       "ConfirmChangesTitle": "Confirm Calendar Changes",
       "CurrentDateHeading": "Current Date",
       "DaysPerMonth": "Days per month",
+      "DaysPerMonthHint": "The length given to new months, and the value the button below applies to every month.",
       "DraftHint": "edits a draft; nothing is written until you save",
       "ErrorsHeading": "Fix these before saving",
+      "FirstWeekday": "Year one begins on",
+      "FirstWeekdayHint": "Shifts the whole week so an established setting’s dates fall on their proper days.",
       "FolderLinked": "Calendar notes are stored in",
       "FolderMissing": "The calendar notes folder has not been created yet. It is created when you save.",
       "MonthFallback": "Month",
+      "MonthLengthAria": "Days in month",
+      "MonthLengthHint": "Each month keeps its own length, so festival days and short months can stand between the long ones.",
       "MonthNameAria": "Name of month",
       "MonthNames": "Month Names",
       "MonthsPerYear": "Months per year",
@@ -230,7 +237,10 @@
       "WeekdayCount": "Number of weekdays",
       "WeekdayFallback": "Day",
       "WeekdayNameAria": "Name of weekday",
-      "WeekdayNames": "Weekday Names"
+      "WeekdayNames": "Weekday Names",
+      "YearAffixHint": "Years are shown as",
+      "YearPrefix": "Year prefix",
+      "YearSuffix": "Year suffix"
     },
     "Settings": {
       "ConfigMenuName": "Calendar Configuration",
@@ -282,6 +292,69 @@
         "WaningCrescent": "Waning crescent"
       }
     },
+    "Presets": {
+      "Heading": "Setting calendars",
+      "Hint": "Load a ready-made calendar for a published setting: its months, weekdays, moons and Ages, with the era already dated. It loads into the editor for review, exactly like an import, and nothing is written until you save.",
+      "Choose": "Setting",
+      "ChoosePlaceholder": "Choose a setting…",
+      "Load": "Load preset",
+      "IncludeHolidays": "Also create the setting’s holiday notes",
+      "NoHolidays": "This preset ships no holiday notes.",
+      "SelectFirst": "Choose a setting to load first.",
+      "ConfirmTitle": "Load setting calendar",
+      "ConfirmBody": "Load the {name} calendar into the configuration editor? This replaces the calendar, its moons and the Age list in the editor.",
+      "CaveatsHeading": "Where this preset differs from the setting:",
+      "RowHolidays": "Holiday notes to create: {count}",
+      "StagedHeading": "Preset staged for review",
+      "PendingHolidays": "Holiday notes are staged and will be created when you save.",
+      "DiscardHolidays": "Discard staged holidays",
+      "HolidaysCreated": "Created {count} holiday notes.",
+      "Loaded": "Loaded the {name} calendar into the editor.",
+      "harptos": {
+        "Label": "Forgotten Realms (Harptos)",
+        "Description": "Twelve months of thirty days with five festival days between them, a ten-day tenday, and Selûne overhead. Dated 1495 DR.",
+        "Caveat": {
+          "Shieldmeet": "Shieldmeet falls only in leap years, which this module does not model, so it is not included.",
+          "Tenday": "The tenday runs continuously through the festival days instead of restarting each month, so a month does not always begin on the 1st."
+        }
+      },
+      "golarion": {
+        "Label": "Pathfinder (Golarion)",
+        "Description": "Absalom Reckoning: twelve months mirroring the real year, a seven-day week, and the moon Somal. Dated 4710 AR.",
+        "Caveat": {
+          "LeapDay": "Golarion’s leap day in Calistril is not modelled, so every year runs 365 days. Weekdays and moon phases are exact on 1 Abadius 4710 AR and drift a day every four years after that."
+        }
+      },
+      "eberron": {
+        "Label": "Eberron (Galifar)",
+        "Description": "Twelve months of twenty-eight days, a 336-day year that never drifts against its weekdays, twelve moons, and twenty-nine holidays. Dated 998 YK.",
+        "Caveat": {
+          "MoonCycles": "The twelve moons share a 28-day cycle staggered across the month, so every night shows a different sky. A 28-day cycle inside a 28-day month cannot also place each moon full in its own namesake month.",
+          "ManyMoons": "All twelve moons are drawn in the month grid. Switch any of them off in the moon list if the calendar looks crowded."
+        }
+      },
+      "greyhawk": {
+        "Label": "Greyhawk (Common Year)",
+        "Description": "Twelve months of twenty-eight days with four festival weeks, plus Luna and Celene. Dated 591 CY.",
+        "Caveat": {
+          "Luna": "Luna is full at Richfest alongside Celene. Its 28-day cycle cannot also reach full at the other three festivals, which stand 91 days apart."
+        }
+      },
+      "darksun": {
+        "Label": "Dark Sun (Athas)",
+        "Description": "Twelve months of thirty days with three five-day sun weeks, a six-day week, and the moons Ral and Guthay. Dated Free Year 1.",
+        "Caveat": {
+          "YearNames": "Athas names each year from a repeating cycle of seventy-six, such as Ral’s Fury. This module has no year names, so years are shown as numbers."
+        }
+      },
+      "gregorian": {
+        "Label": "Gregorian (Earth)",
+        "Description": "The real-world calendar, with the Moon. Dated 1 January 2026.",
+        "Caveat": {
+          "LeapDay": "Leap days are not modelled, so every year runs 365 days. Weekdays and moon phases are exact on 1 January 2026 and drift a day every four years after that."
+        }
+      }
+    },
     "Import": {
       "ConfirmBody": "Load \"{name}\" into the configuration editor?",
       "ConfirmTitle": "Import calendar data",
@@ -297,7 +370,7 @@
       "ProblemsHeading": "The file has the following issues:",
       "ReviewHint": "Nothing is written to the world until you review the result and save.",
       "RowAges": "Ages: {from} → {to}",
-      "RowDays": "Days per month: {from} → {to}",
+      "RowYearLength": "Days per year: {from} → {to}",
       "RowEvents": "Timeline events in the file: {count}",
       "RowMonths": "Months per year: {from} → {to}",
       "RowMoons": "Moons: {from} → {to}",
@@ -351,7 +424,10 @@
     "Validation": {
       "monthsRange": "Months per year must be a whole number between {min} and {max}.",
       "daysRange": "Days per month must be a whole number between {min} and {max}.",
+      "monthLengthCount": "There must be exactly one length per month: expected {expected}, found {actual}.",
+      "monthLengthRange": "These months need a length between {min} and {max} days: {names}.",
       "weekdayRange": "The calendar needs between {min} and {max} weekdays.",
+      "weekdayOffsetRange": "The weekday that year one begins on must be a whole number between 0 and {max}.",
       "monthNameCount": "There must be exactly one name per month: expected {expected}, found {actual}.",
       "monthNameEmpty": "Every month needs a name.",
       "weekdayNameEmpty": "Every weekday needs a name.",
@@ -366,7 +442,7 @@
       "moonCycleRange": "The moon \"{name}\" needs a cycle length between {min} and {max} days.",
       "moonOffsetRange": "The offset for \"{name}\" must be a whole number between 0 and {max}.",
       "moonPhaseCount": "The moon \"{name}\" must use one of these phase counts: {counts}.",
-      "moonCycleLocked": "The moon \"{name}\" has a {cycle} day cycle that divides the {days} day month exactly, so its phases never drift.",
+      "moonCycleLocked": "These moons always show the same phase on the same day of a month, so their phases never drift: {names}.",
       "importReplacesEvents": "Importing replaces all {existing} existing timeline events with the {count} events from the file.",
       "importNotJson": "That file is not valid JSON.",
       "importWrongFormat": "That file is not a Through the Ages calendar export.",

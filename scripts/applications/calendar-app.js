@@ -34,6 +34,7 @@ import {
   addYears,
   buildMonthGrid,
   dayKey,
+  daysInMonth,
   isSameDay,
   isSameMonth,
   monthKey,
@@ -140,7 +141,7 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
     // Keep browsing state inside the configured bounds after a reconfiguration.
     this.viewMonth = Math.min(Math.max(1, this.viewMonth), calendar.monthsPerYear);
-    this.selectedDay = Math.min(Math.max(1, this.selectedDay), calendar.daysPerMonth);
+    this.selectedDay = Math.min(Math.max(1, this.selectedDay), daysInMonth(this.viewMonth, calendar));
 
     const grid = buildMonthGrid(this.viewYear, this.viewMonth, calendar);
     const noteCounts = getMonthNoteCounts(this.viewYear, this.viewMonth);
@@ -202,6 +203,7 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
       weekdayNames: calendar.weekdayNames,
       weeks,
       viewYear: this.viewYear,
+      viewYearLabel: formatYear(this.viewYear, calendar),
       viewMonth: this.viewMonth,
       viewMonthName: monthName(this.viewMonth, calendar),
       viewLabel: formatMonth(this.viewYear, this.viewMonth),
@@ -406,7 +408,7 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
         <label for="tta-set-month">${t("TTA.Common.Month")}</label>
         <select id="tta-set-month" name="month">${monthOptions}</select>
         <label for="tta-set-day">${t("TTA.Common.Day")}</label>
-        <input id="tta-set-day" type="number" name="day" min="1" max="${calendar.daysPerMonth}" step="1" value="${current.day}">
+        <input id="tta-set-day" type="number" name="day" min="1" max="${daysInMonth(current.month, calendar)}" step="1" value="${current.day}">
         <label for="tta-set-hour">${t("TTA.Common.Time")}</label>
         <div class="tta-time-inputs">
           <input id="tta-set-hour" type="number" name="hour" min="0" max="23" step="1" value="${currentTime.hour}" aria-label="${t("TTA.Time.Hour")}">

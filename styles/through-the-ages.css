@@ -1081,6 +1081,14 @@
 .tta .tta-name-field { display: flex; align-items: center; gap: 6px; }
 .tta .tta-name-field input { flex: 1; min-height: 30px; }
 
+/* The per-month length sits beside its name and stays narrow enough that the
+   three-column grid of months still fits without wrapping. */
+.tta .tta-name-field input.tta-month-days {
+  flex: none;
+  width: 52px;
+  text-align: center;
+}
+
 .tta .tta-name-index {
   width: 16px;
   flex: none;

@@ -8,7 +8,7 @@
 import { createRichTextInput, log, t } from "../compat.js";
 import { DEFAULT_COLOR, MODULE_ID, SCOPE, VISIBILITY } from "../constants.js";
 import { formatDate, getCalendar } from "../services/calendar-service.js";
-import { dayKey, parseKey } from "../services/date-service.js";
+import { dayKey, maxDaysInMonth, parseKey } from "../services/date-service.js";
 import { canManageEvents } from "../services/permission-service.js";
 import { createEvent, promoteNote, updateEvent } from "../services/timeline-service.js";
 
@@ -106,7 +106,7 @@ export class EventEditorApp extends HandlebarsApplicationMixin(ApplicationV2) {
         label: name,
         selected: index + 1 === (parsed.month || 1)
       })),
-      maxDay: calendar.daysPerMonth
+      maxDay: maxDaysInMonth(calendar)
     };
   }
 

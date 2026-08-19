@@ -6,11 +6,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-08-19
+
+### Added
+
+- **Setting calendars.** Six ready-made calendars load from a dropdown at the top of
+  the configuration window: Forgotten Realms (Harptos), Pathfinder (Golarion),
+  Eberron, Greyhawk, Dark Sun and the real-world Gregorian calendar. Each brings its
+  months and month lengths, weekday names, moons anchored to the setting's canon, an
+  Age list for its eras, a year suffix, and — for Eberron, the Forgotten Realms,
+  Greyhawk and Dark Sun — its holidays. A preset loads into the editor for review
+  exactly like a JSON import, and the confirmation dialog lists where the preset
+  knowingly differs from its setting. Nothing is written until the GM saves.
+- **Months of differing lengths.** Each month now carries its own length, so festival
+  days and short months can stand between the long ones: Harptos' Midwinter, the
+  Greyhawk festival weeks and the Athasian sun weeks are ordinary one-, five- and
+  seven-day months. `Days per month` remains the uniform default, with a button to
+  apply it to every month at once.
+- **Era labels.** An optional year prefix and suffix, so dates read as `1495 DR`
+  instead of `Year 1495`.
+- **Weekday alignment.** The weekday the calendar's first year begins on is now
+  configurable, which is what lets a preset put 1 Abadius 4710 AR on a Fireday.
+- `listPresets`, `buildPresetData` and `applyPreset` on the public API.
+
 ### Changed
 
 - The month grid draws a moon disc only on the day a moon turns over into a new
   named phase, instead of on every day. The day and month detail panel is
   unchanged and still reports the phase for whichever day is selected.
+- Moon cycle lengths may now be fractional, so a 29.53-day moon drifts as the real
+  one does rather than being rounded to whole days.
+- A calendar may now have up to twelve moons, raised from ten, so Eberron's full set
+  fits.
+- The import summary reports days per year rather than days per month, which is the
+  only figure that stays meaningful once months differ in length.
+- When several moons are locked to the month length, the configuration window raises
+  one warning naming them all instead of one warning each.
+
+### Migration
+
+Stored calendars upgrade to schema version 4 on load. Every month takes the existing
+`daysPerMonth` as its length and the new fields default to empty, so dates, notes and
+events are unchanged. Calendar exports move to format version 2; older exports still
+import, and this version's exports are refused by earlier releases rather than being
+partially read.
 
 ## [2.0.0] - 2026-08-19
 

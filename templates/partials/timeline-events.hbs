@@ -24,7 +24,7 @@
   <ol class="tta-year-list">
     {{#each groups}}
       <li class="tta-year {{#if isCurrent}}tta-year-current{{/if}}">
-        <div class="tta-year-gutter">{{year}}</div>
+        <div class="tta-year-gutter">{{yearLabel}}</div>
         <ul class="tta-year-events">
           {{#each events}}
             {{> "modules/through-the-ages/templates/partials/timeline-event.hbs"}}

@@ -19,6 +19,7 @@ import {
   SCHEMA_VERSION
 } from "../constants.js";
 import { getData } from "./calendar-service.js";
+import { daysInYear } from "./date-service.js";
 import { migrateCalendarData, migrateEvents } from "./migration-service.js";
 import { getEvents } from "./timeline-service.js";
 import { validateCalendarData } from "./validation-service.js";
@@ -118,7 +119,9 @@ export function summarizeImport(parsed, current) {
   const now = current?.calendar ?? {};
   return {
     months: { from: now.monthsPerYear, to: next.monthsPerYear },
-    days: { from: now.daysPerMonth, to: next.daysPerMonth },
+    // The year length is what a GM actually recognises a calendar by, and it is
+    // the only figure that stays meaningful once months differ in length.
+    yearLength: { from: daysInYear(now), to: daysInYear(next) },
     weekdays: { from: now.weekdayNames?.length ?? 0, to: next.weekdayNames?.length ?? 0 },
     moons: { from: now.moons?.length ?? 0, to: next.moons?.length ?? 0 },
     ages: { from: current?.ages?.length ?? 0, to: parsed?.data?.ages?.length ?? 0 },

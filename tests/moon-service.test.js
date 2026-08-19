@@ -11,7 +11,9 @@ import {
   isNewMoon,
   isPhaseChange,
   isWaxing,
+  clampCycleLength,
   normalizeMoon,
+  offsetForPhaseOnDay,
   phaseFraction,
   phaseIndex,
   phaseKey,
@@ -237,5 +239,57 @@ describe("sortMoons and visibleMoons", () => {
   it("hides GM-only moons from players", () => {
     assert.deepEqual(visibleMoons(moons, false).map(m => m.id), ["b"]);
     assert.deepEqual(visibleMoons(moons, true).map(m => m.id), ["a", "b"]);
+  });
+});
+
+describe("fractional cycle lengths", () => {
+  it("keeps a decimal cycle instead of truncating it", () => {
+    assert.equal(normalizeMoon({ name: "Selûne", cycleLength: 30.45 }).cycleLength, 30.45);
+    assert.equal(normalizeMoon({ name: "Moon", cycleLength: 29.53059 }).cycleLength, 29.5306);
+  });
+
+  it("still bounds the cycle", () => {
+    assert.equal(clampCycleLength(0.5), LIMITS.MOON_CYCLE_MIN);
+    assert.equal(clampCycleLength(99999), LIMITS.MOON_CYCLE_MAX);
+    assert.equal(clampCycleLength("nonsense"), LIMITS.MOON_CYCLE_MIN);
+  });
+
+  it("drifts against a whole-day calendar as a real moon does", () => {
+    const selune = normalizeMoon({ name: "Selûne", cycleLength: 30.45, offset: 0 });
+    // A 30.45 day cycle cannot repeat on a 30 day rhythm: after ten cycles the
+    // moon is several days adrift of where a whole-day cycle would place it.
+    assert.notEqual(phaseIndex(selune, 0), phaseIndex(selune, 300));
+  });
+
+  it("bounds the offset by whole days of the cycle", () => {
+    assert.ok(normalizeMoon({ name: "M", cycleLength: 29.53, offset: 40 }).offset < 30);
+  });
+});
+
+describe("offsetForPhaseOnDay", () => {
+  it("finds the offset that makes a moon full on a chosen day", () => {
+    for (const cycleLength of [28, 29.5306, 30.45, 34, 91, 125]) {
+      const shape = { cycleLength, phaseCount: 8 };
+      const offset = offsetForPhaseOnDay(shape, 500, 4);
+      assert.equal(phaseKey({ ...shape, offset }, 500), "Full", `cycle ${cycleLength}`);
+    }
+  });
+
+  it("finds the offset that makes a moon new on a chosen day", () => {
+    const shape = { cycleLength: 34, phaseCount: 8 };
+    const offset = offsetForPhaseOnDay(shape, 77, 0);
+    assert.equal(phaseKey({ ...shape, offset }, 77), "New");
+  });
+
+  it("returns an offset the validator will accept", () => {
+    const shape = { cycleLength: 29.5306, phaseCount: 8 };
+    const offset = offsetForPhaseOnDay(shape, 12345, 4);
+    assert.ok(Number.isInteger(offset));
+    assert.ok(offset >= 0 && offset < Math.ceil(shape.cycleLength));
+  });
+
+  it("wraps a phase index beyond the named set", () => {
+    const shape = { cycleLength: 28, phaseCount: 8 };
+    assert.equal(offsetForPhaseOnDay(shape, 100, 12), offsetForPhaseOnDay(shape, 100, 4));
   });
 });

@@ -2,8 +2,16 @@
  * Pure calendar arithmetic.
  *
  * Nothing in this module touches Foundry globals: every function takes an
- * explicit calendar descriptor `{ monthsPerYear, daysPerMonth, weekdayNames }`
- * so the rules stay deterministic and unit testable.
+ * explicit calendar descriptor
+ * `{ monthsPerYear, daysPerMonth, monthLengths, weekdayNames }` so the rules
+ * stay deterministic and unit testable.
+ *
+ * Months may differ in length. `monthLengths` holds the authoritative value
+ * for each month and `daysPerMonth` is the uniform fallback used when an entry
+ * is missing, which is how calendars written before variable lengths existed
+ * keep producing exactly the same dates. Because every calculation below runs
+ * off a continuous absolute-day index, short festival months such as Harptos'
+ * Midwinter slot in without disturbing weekdays or moon phases.
  */
 
 import { LIMITS, SCOPE } from "../constants.js";
@@ -70,7 +78,7 @@ export function isValidDate(date, calendar) {
   if (![year, month, day].every(v => Number.isInteger(v))) return false;
   if (year < LIMITS.YEAR_MIN) return false;
   if (month < 1 || month > calendar.monthsPerYear) return false;
-  if (day < 1 || day > calendar.daysPerMonth) return false;
+  if (day < 1 || day > daysInMonth(month, calendar)) return false;
   return true;
 }
 
@@ -78,7 +86,7 @@ export function isValidDate(date, calendar) {
 export function clampDate(date, calendar) {
   const year = Math.max(LIMITS.YEAR_MIN, Math.trunc(Number(date?.year) || LIMITS.YEAR_MIN));
   const month = Math.min(Math.max(1, Math.trunc(Number(date?.month) || 1)), calendar.monthsPerYear);
-  const day = Math.min(Math.max(1, Math.trunc(Number(date?.day) || 1)), calendar.daysPerMonth);
+  const day = Math.min(Math.max(1, Math.trunc(Number(date?.day) || 1)), daysInMonth(month, calendar));
   return { year, month, day };
 }
 
@@ -125,25 +133,79 @@ export function secondsUntilNextAdventureDay(time) {
 }
 
 /**
+ * Hold a month length inside the supported range.
+ *
+ * Stored data is clamped on the way in, but this layer is also reachable from
+ * the public API and from a calendar hand-built by another module. An absurd
+ * length here would have {@link buildMonthGrid} allocate an absurd grid, so the
+ * bound is enforced where the value is read rather than trusted.
+ */
+function clampMonthLength(days) {
+  return Math.min(Math.max(days, LIMITS.DAYS_MIN), LIMITS.DAYS_MAX);
+}
+
+/**
+ * Length of a single month (1-based) in days.
+ * Falls back to the uniform `daysPerMonth` when no explicit length is stored.
+ */
+export function daysInMonth(month, calendar) {
+  const explicit = Array.isArray(calendar?.monthLengths)
+    ? Math.trunc(Number(calendar.monthLengths[Math.trunc(Number(month)) - 1]))
+    : NaN;
+  if (Number.isFinite(explicit) && explicit >= LIMITS.DAYS_MIN) return clampMonthLength(explicit);
+  const uniform = Math.trunc(Number(calendar?.daysPerMonth));
+  return Number.isFinite(uniform) && uniform >= LIMITS.DAYS_MIN ? clampMonthLength(uniform) : LIMITS.DAYS_MIN;
+}
+
+/** The length of every month, in order. */
+export function monthLengths(calendar) {
+  const count = Math.max(1, Math.trunc(Number(calendar?.monthsPerYear)) || 1);
+  return Array.from({ length: count }, (_, index) => daysInMonth(index + 1, calendar));
+}
+
+/** Total days in one year of the calendar. */
+export function daysInYear(calendar) {
+  return monthLengths(calendar).reduce((total, length) => total + length, 0);
+}
+
+/** The longest month, used wherever a single upper bound is needed. */
+export function maxDaysInMonth(calendar) {
+  return Math.max(...monthLengths(calendar));
+}
+
+/** Days elapsed in the year before a month (1-based) begins. */
+export function monthStartOffset(month, calendar) {
+  const lengths = monthLengths(calendar);
+  const upto = Math.min(Math.max(Math.trunc(Number(month)) - 1, 0), lengths.length);
+  let total = 0;
+  for (let i = 0; i < upto; i++) total += lengths[i];
+  return total;
+}
+
+/**
  * Convert a date to a zero-based absolute day index counted from Year 1, Month 1, Day 1.
  */
 export function toAbsoluteDay(date, calendar) {
-  const { monthsPerYear, daysPerMonth } = calendar;
-  return ((date.year - 1) * monthsPerYear * daysPerMonth)
-    + ((date.month - 1) * daysPerMonth)
+  return ((date.year - 1) * daysInYear(calendar))
+    + monthStartOffset(date.month, calendar)
     + (date.day - 1);
 }
 
 /** Inverse of {@link toAbsoluteDay}. Values below zero clamp to the first day. */
 export function fromAbsoluteDay(absoluteDay, calendar) {
-  const { monthsPerYear, daysPerMonth } = calendar;
-  const perYear = monthsPerYear * daysPerMonth;
+  const lengths = monthLengths(calendar);
+  const perYear = lengths.reduce((total, length) => total + length, 0);
   const abs = Math.max(0, Math.trunc(absoluteDay));
   const year = Math.floor(abs / perYear) + 1;
-  const remainder = abs % perYear;
-  const month = Math.floor(remainder / daysPerMonth) + 1;
-  const day = (remainder % daysPerMonth) + 1;
-  return { year, month, day };
+
+  let remainder = abs % perYear;
+  let month = 1;
+  for (const length of lengths) {
+    if (remainder < length) break;
+    remainder -= length;
+    month++;
+  }
+  return { year, month, day: remainder + 1 };
 }
 
 /**
@@ -156,30 +218,49 @@ export function addDays(date, delta, calendar) {
 
 /** Advance (or rewind) by whole months, keeping the day number where possible. */
 export function addMonths(date, delta, calendar) {
-  const { monthsPerYear, daysPerMonth } = calendar;
+  const { monthsPerYear } = calendar;
   const totalMonths = ((date.year - 1) * monthsPerYear) + (date.month - 1) + Math.trunc(delta);
   const safeMonths = Math.max(0, totalMonths);
   const year = Math.floor(safeMonths / monthsPerYear) + 1;
   const month = (safeMonths % monthsPerYear) + 1;
-  const day = Math.min(date.day, daysPerMonth);
+  const day = Math.min(date.day, daysInMonth(month, calendar));
   return { year, month, day };
 }
 
 /** Advance (or rewind) by whole years. */
 export function addYears(date, delta, calendar) {
   const year = Math.max(LIMITS.YEAR_MIN, date.year + Math.trunc(delta));
-  return { year, month: date.month, day: Math.min(date.day, calendar.daysPerMonth) };
+  return { year, month: date.month, day: Math.min(date.day, daysInMonth(date.month, calendar)) };
 }
 
-/** Zero-based index into `weekdayNames` for a date. */
+/**
+ * Zero-based index into `weekdayNames` for a date.
+ *
+ * `weekdayOffset` names the weekday that Year 1, Month 1, Day 1 falls on, which
+ * is what lets a calendar line its weekdays up with an established setting
+ * instead of always starting the week on its first named day.
+ */
 export function weekdayIndex(date, calendar) {
   const count = calendar.weekdayNames?.length || 1;
-  return ((toAbsoluteDay(date, calendar) % count) + count) % count;
+  const offset = Math.trunc(Number(calendar.weekdayOffset)) || 0;
+  return (((toAbsoluteDay(date, calendar) + offset) % count) + count) % count;
 }
 
 /** Display name of the weekday for a date. */
 export function weekdayName(date, calendar) {
   return calendar.weekdayNames?.[weekdayIndex(date, calendar)] ?? "";
+}
+
+/**
+ * A year rendered with the calendar's era affixes, e.g. `1495 DR`.
+ * Returns null when the calendar sets neither, leaving the caller free to fall
+ * back to its own localised wording.
+ */
+export function yearWithAffixes(year, calendar) {
+  const prefix = String(calendar?.yearPrefix ?? "").trim();
+  const suffix = String(calendar?.yearSuffix ?? "").trim();
+  if (!prefix && !suffix) return null;
+  return [prefix, String(year), suffix].filter(Boolean).join(" ");
 }
 
 /** Display name of a month number (1-based). */
@@ -207,7 +288,7 @@ export function buildMonthGrid(year, month, calendar) {
   const leading = weekdayIndex({ year, month, day: 1 }, calendar);
   const cells = [];
   for (let i = 0; i < leading; i++) cells.push({ day: null });
-  for (let d = 1; d <= calendar.daysPerMonth; d++) cells.push({ day: d });
+  for (let d = 1; d <= daysInMonth(month, calendar); d++) cells.push({ day: d });
   while (cells.length % weekdayCount !== 0) cells.push({ day: null });
 
   const weeks = [];

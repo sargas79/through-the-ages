@@ -13,7 +13,12 @@ The module is system-agnostic — it adds no game mechanics and works in any v14
 
 ## Features
 
-- A custom calendar: months per year, days per month, month names, weekday names.
+- **Setting calendars**: ready-made presets for the Forgotten Realms, Pathfinder,
+  Eberron, Greyhawk, Dark Sun and the real-world Gregorian calendar, with their
+  months, moons, eras and holidays already dated.
+- A custom calendar: months per year, month names and lengths, weekday names, and the
+  weekday the calendar's first year begins on. Months may differ in length, so
+  festival days and short months can stand between the long ones.
 - One authoritative campaign date, controlled only by GMs and synchronised to every
   connected client without a reload.
 - A shared 24-hour campaign clock with GM time presets that advance Foundry world
@@ -23,8 +28,11 @@ The module is system-agnostic — it adds no game mechanics and works in any v14
   canonical numeric names (`YYYY-MM-DD`, and `YYYY-MM-00` for month notes).
 - Player notes that are private to their author and the GMs by default.
 - **Ages**: named eras spanning a contiguous range of years, with overlap validation.
-- **Moons**: up to ten optional moons, each with its own cycle length, starting offset
-  and phase count, shown in the header, the day detail panel and the month grid.
+- **Moons**: up to twelve optional moons, each with its own cycle length — whole days
+  or fractional, so a 29.53-day moon drifts as the real one does — starting offset and
+  phase count, shown in the header, the day detail panel and the month grid.
+- Era labels: an optional year prefix and suffix, so dates read as `1495 DR` or
+  `4710 AR` rather than `Year 1495`.
 - **Export and import** of the calendar structure, moons, Ages and timeline events as
   a portable JSON file.
 - A timeline window with three display densities: expanded, current year, current month.
@@ -33,10 +41,11 @@ The module is system-agnostic — it adds no game mechanics and works in any v14
 
 ### Not included
 
-No real-world calendar conversion, seasons, weather, holidays, recurring events,
-reminders, scene automation, third-party calendar integrations, or a separate
-sidebar tab. Moon phases are exposed through the API rather than driving any
-automation of their own.
+No leap years, seasons, weather, recurring events, reminders, scene automation,
+third-party calendar integrations, or a separate sidebar tab. Moon phases are exposed
+through the API rather than driving any automation of their own. Holidays exist only
+as ordinary calendar notes: the setting presets can create a year of them for you,
+but nothing repeats them the following year.
 
 ---
 
@@ -123,7 +132,7 @@ Each moon has:
 
 | Field | Meaning |
 |---|---|
-| Cycle (days) | Whole days for one complete cycle, from new moon to new moon. Independent of the month length, so phases drift across months. |
+| Cycle (days) | Days for one complete cycle, from new moon to new moon. Need not be a whole number. Independent of the month length, so phases drift across months. |
 | Offset (days) | How far into its cycle the moon already is on Year 1, Month 1, Day 1. Use it to put several moons out of step. |
 | Phases | How many named phases the cycle is divided into: 2, 4 or 8. |
 | Show in the month grid | Draws a small phase disc in every day cell. Turn it off for moons that only matter occasionally. |
@@ -132,6 +141,53 @@ Each moon has:
 A phase is centred on its exact point in the cycle, so a moon reads as full on the
 day nearest the true midpoint rather than on the day after it. The configuration
 row previews each moon's phase on the current campaign date as you edit it.
+
+### Setting calendars
+
+The **Setting calendars** section at the top of the configuration window loads a
+ready-made calendar for a published setting. Pick one, decide whether you want its
+holiday notes, and press **Load preset**.
+
+| Preset | Structure | Year | Moons |
+|---|---|---|---|
+| Forgotten Realms (Harptos) | 12 months of 30 days with 5 festival days between them, a 10-day tenday | 365, from 1495 DR | Selûne, 30.45 days, full over Midsummer |
+| Pathfinder (Golarion) | 12 months mirroring the real year, 7-day week | 365, from 4710 AR | Somal, 29.5 days |
+| Eberron (Galifar) | 12 months of 28 days, 7-day week | 336, from 998 YK | all twelve, 28 days each |
+| Greyhawk (Common Year) | 12 months of 28 days with 4 festival weeks | 364, from 591 CY | Luna 28 days, Celene 91 days |
+| Dark Sun (Athas) | 12 months of 30 days with 3 five-day sun weeks, 6-day week | 375, from Free Year 1 | Ral 34 days, Guthay 125 days |
+| Gregorian (Earth) | The real calendar, 7-day week | 365, from 1 January 2026 | the Moon, 29.53 days |
+
+A preset loads into the configuration editor rather than writing straight to the
+world, exactly like a JSON import: the confirmation dialog lists what will change and
+where the preset knowingly differs from its setting, and nothing is applied until you
+press **Save**. Everything it brings is ordinary editable data — rename a month,
+delete a moon or adjust the starting year before saving, and the result is yours.
+
+Each preset also carries an Age list covering its setting's eras, and a year suffix
+so dates read as `1495 DR` rather than `Year 1495`.
+
+**Holidays.** Eberron ships 29 holiday notes and the Forgotten Realms 9; Greyhawk and
+Dark Sun mark their festivals; Pathfinder and Gregorian ship none. Holidays are
+created as ordinary player-visible calendar notes in the preset's starting year, and
+only when the checkbox is ticked. They do not repeat in later years — copy or recreate
+them if you want them again.
+
+**Where presets are approximate.** This module has no leap years, so Golarion and the
+Gregorian calendar run 365 days every year and slip a day against reality every four
+years, and Harptos loses Shieldmeet entirely. Dark Sun's 76-year cycle of year names
+has no equivalent here. Greyhawk's Luna is full at Richfest but cannot also be full at
+the other three festivals, which stand 91 days apart. Eberron's twelve moons share one
+staggered 28-day cycle, because a 28-day cycle inside a 28-day month cannot put each
+moon full in its own namesake month. The dialog repeats whichever of these applies
+when you load a preset.
+
+You can also apply a preset from a macro:
+
+```js
+const api = game.modules.get("through-the-ages").api;
+api.listPresets();                                    // ids, labels, descriptions
+await api.applyPreset("harptos", { createHolidays: true });
+```
 
 ### Exporting and importing
 
@@ -199,7 +255,7 @@ online the attempt is refused with a clear message rather than failing silently.
 
 | Data | Location |
 |---|---|
-| Calendar structure, current date, moons, Ages | world setting `through-the-ages.calendarData` |
+| Calendar structure, month lengths, current date, moons, Ages | world setting `through-the-ages.calendarData` |
 | Timeline events | world setting `through-the-ages.timelineEvents` |
 | Note text | Journal Entry Pages in the **Calendar Notes** folder |
 | Note metadata (date key, author, visibility) | page flags under `flags.through-the-ages` |
@@ -231,7 +287,7 @@ Changing the calendar after notes exist is allowed, and nothing is ever deleted.
 configuration window warns and asks for explicit confirmation when a change would:
 
 - reduce the months per year below a month already used by a note or event,
-- reduce the days per month below a day already used, or
+- shorten every month below a day number already used, or
 - change the weekday count, which relabels the weekday shown for every historical date, or
 - replace the timeline events with a set staged by an import.
 

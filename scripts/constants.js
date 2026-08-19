@@ -6,7 +6,7 @@
 
 export const MODULE_ID = "through-the-ages";
 export const MODULE_TITLE = "Through the Ages";
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 export const SOCKET_EVENT = `module.${MODULE_ID}`;
 
@@ -83,10 +83,18 @@ export const LIMITS = {
   WEEKDAYS_MAX: 14,
   YEAR_MIN: 1,
   AGE_DURATION_MIN: 1,
-  MOONS_MAX: 10,
+  MOONS_MAX: 12,
   MOON_CYCLE_MIN: 2,
-  MOON_CYCLE_MAX: 1000
+  MOON_CYCLE_MAX: 1000,
+  YEAR_AFFIX_MAX: 12
 };
+
+/**
+ * Decimal places kept on a moon's cycle length. Real cycles are rarely whole
+ * days — Selune runs 30.45 and Earth's moon 29.53 — and rounding them to whole
+ * days would visibly drift a campaign's phases within a few years.
+ */
+export const MOON_CYCLE_DECIMALS = 4;
 
 /** Named phase counts a moon may be divided into. */
 export const MOON_PHASE_COUNTS = [2, 4, 8];
@@ -117,16 +125,27 @@ export const DEFAULT_WEEKDAY_NAMES = [
   "Moonday", "Towerday", "Starday", "Forgeday", "Riverday", "Sunday", "Restday"
 ];
 
-/** The calendar payload written on first configuration. */
+/**
+ * The calendar payload written on first configuration.
+ *
+ * `daysPerMonth` is the uniform default: it seeds new months and stands in
+ * whenever `monthLengths` is missing an entry. `monthLengths` is the
+ * authoritative per-month length, which is what lets a calendar mix ordinary
+ * months with short festival periods such as Harptos' Midwinter.
+ */
 export const DEFAULT_CALENDAR_DATA = {
   schemaVersion: SCHEMA_VERSION,
   calendar: {
     monthsPerYear: 12,
     daysPerMonth: 30,
     monthNames: [...DEFAULT_MONTH_NAMES],
+    monthLengths: Array(12).fill(30),
     weekdayNames: [...DEFAULT_WEEKDAY_NAMES],
+    weekdayOffset: 0,
     currentDate: { year: 1, month: 1, day: 1 },
     currentTime: { hour: 0, minute: 0 },
+    yearPrefix: "",
+    yearSuffix: "",
     moons: []
   },
   ages: []
@@ -140,10 +159,10 @@ export const DEFAULT_MOON_COLOR = "#c9d4e8";
 
 /** Fallback names used when adding or normalising moons. */
 export const DEFAULT_MOON_NAMES = [
-  "Selene", "Verrick", "Ilmara", "Kethis", "Dunmoor",
-  "Ashryn", "Torvald", "Nyx", "Calder", "Wisp"
+  "Selene", "Verrick", "Ilmara", "Kethis", "Dunmoor", "Ashryn",
+  "Torvald", "Nyx", "Calder", "Wisp", "Emberlyn", "Sarrow"
 ];
 
 /** Envelope identifiers for exported calendar files. */
 export const EXPORT_FORMAT = "through-the-ages-calendar";
-export const EXPORT_FORMAT_VERSION = 1;
+export const EXPORT_FORMAT_VERSION = 2;

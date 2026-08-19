@@ -3,6 +3,42 @@
 
   <p class="tta-breadcrumb">{{localize "TTA.Config.Breadcrumb"}} <strong>{{localize "TTA.Config.Open"}}</strong> &middot; {{localize "TTA.Config.DraftHint"}}</p>
 
+  <section class="tta-section">
+    <div class="tta-section-head">
+      <span class="tta-kicker">{{localize "TTA.Presets.Heading"}}</span>
+      <span class="tta-meta">{{localize "TTA.Presets.Hint"}}</span>
+    </div>
+    <div class="tta-inline-row">
+      <label class="tta-grow">
+        <span class="tta-sr-only">{{localize "TTA.Presets.Choose"}}</span>
+        <select data-preset-select aria-label="{{localize "TTA.Presets.Choose"}}">
+          <option value="">{{localize "TTA.Presets.ChoosePlaceholder"}}</option>
+          {{#each presetChoices}}
+            <option value="{{value}}">{{label}}</option>
+          {{/each}}
+        </select>
+      </label>
+      <label class="tta-checkbox">
+        <input type="checkbox" data-preset-holidays checked>
+        <span>{{localize "TTA.Presets.IncludeHolidays"}}</span>
+      </label>
+      <button type="button" class="tta-compact" data-action="loadPreset">{{localize "TTA.Presets.Load"}}</button>
+    </div>
+    <p class="tta-hint" data-preset-description>{{presetDescription}}</p>
+  </section>
+
+  {{#if hasPendingHolidays}}
+    <div class="tta-panel">
+      <div class="tta-panel-head">
+        <div>
+          <span class="tta-kicker">{{localize "TTA.Presets.StagedHeading"}}</span>
+          <p>{{localize "TTA.Presets.PendingHolidays"}} (<span class="tta-num">{{pendingHolidayCount}}</span>)</p>
+        </div>
+        <button type="button" class="tta-ghost tta-compact" data-action="discardHolidays">{{localize "TTA.Presets.DiscardHolidays"}}</button>
+      </div>
+    </div>
+  {{/if}}
+
   {{#if hasPendingImport}}
     <div class="tta-panel">
       <div class="tta-panel-head">
@@ -42,8 +78,21 @@
       </div>
       <div class="tta-field">
         <label for="tta-days">{{localize "TTA.Config.DaysPerMonth"}}</label>
-        <input id="tta-days" type="number" name="daysPerMonth" data-structure
-               min="{{limits.DAYS_MIN}}" max="{{limits.DAYS_MAX}}" step="1" value="{{calendar.daysPerMonth}}">
+        <div class="tta-inline-row">
+          <input id="tta-days" type="number" name="daysPerMonth"
+                 min="{{limits.DAYS_MIN}}" max="{{limits.DAYS_MAX}}" step="1" value="{{calendar.daysPerMonth}}">
+          <button type="button" class="tta-ghost tta-compact" data-action="uniformDays">{{localize "TTA.Config.ApplyToAllMonths"}}</button>
+        </div>
+        <span class="tta-meta">{{localize "TTA.Config.DaysPerMonthHint"}}</span>
+      </div>
+      <div class="tta-field">
+        <label for="tta-weekday-offset">{{localize "TTA.Config.FirstWeekday"}}</label>
+        <select id="tta-weekday-offset" name="weekdayOffset">
+          {{#each weekdayChoices}}
+            <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+        <span class="tta-meta">{{localize "TTA.Config.FirstWeekdayHint"}}</span>
       </div>
       <div class="tta-field">
         <label for="tta-weekdays">{{localize "TTA.Config.WeekdayCount"}}</label>
@@ -72,7 +121,20 @@
       </div>
       <div class="tta-field">
         <label for="tta-current-day">{{localize "TTA.Common.Day"}}</label>
-        <input id="tta-current-day" type="number" name="currentDay" min="1" max="{{calendar.daysPerMonth}}" step="1" value="{{calendar.currentDate.day}}">
+        <input id="tta-current-day" type="number" name="currentDay" min="1" max="{{currentMonthDays}}" step="1" value="{{calendar.currentDate.day}}">
+      </div>
+    </div>
+    <div class="tta-field-grid">
+      <div class="tta-field">
+        <label for="tta-year-prefix">{{localize "TTA.Config.YearPrefix"}}</label>
+        <input id="tta-year-prefix" type="text" name="yearPrefix" maxlength="{{limits.YEAR_AFFIX_MAX}}" value="{{calendar.yearPrefix}}">
+      </div>
+      <div class="tta-field">
+        <label for="tta-year-suffix">{{localize "TTA.Config.YearSuffix"}}</label>
+        <input id="tta-year-suffix" type="text" name="yearSuffix" maxlength="{{limits.YEAR_AFFIX_MAX}}" value="{{calendar.yearSuffix}}">
+      </div>
+      <div class="tta-field">
+        <span class="tta-meta">{{localize "TTA.Config.YearAffixHint"}} <span class="tta-key">{{yearPreview}}</span></span>
       </div>
     </div>
   </section>
@@ -82,12 +144,16 @@
       <span class="tta-kicker">{{localize "TTA.Config.MonthNames"}}</span>
       <button type="button" class="tta-ghost tta-compact" data-action="resetNames">{{localize "TTA.Config.ResetNames"}}</button>
     </div>
+    <p class="tta-hint">{{localize "TTA.Config.MonthLengthHint"}}</p>
     <div class="tta-name-grid">
       {{#each monthNames}}
         <label class="tta-name-field">
           <span class="tta-name-index">{{number}}</span>
           <input type="text" data-month-name value="{{name}}"
                  aria-label="{{localize "TTA.Config.MonthNameAria"}} {{number}}">
+          <input type="number" class="tta-month-days" data-month-days data-structure
+                 min="{{../limits.DAYS_MIN}}" max="{{../limits.DAYS_MAX}}" step="1" value="{{length}}"
+                 aria-label="{{localize "TTA.Config.MonthLengthAria"}} {{number}}">
         </label>
       {{/each}}
     </div>
@@ -194,11 +260,11 @@
               </label>
               <label>
                 <span>{{localize "TTA.Moons.CycleLength"}}</span>
-                <input type="number" data-field="cycleLength" min="2" max="1000" step="1" value="{{cycleLength}}">
+                <input type="number" data-field="cycleLength" min="{{../limits.MOON_CYCLE_MIN}}" max="{{../limits.MOON_CYCLE_MAX}}" step="0.01" value="{{cycleLength}}">
               </label>
               <label>
                 <span>{{localize "TTA.Moons.Offset"}}</span>
-                <input type="number" data-field="offset" min="0" step="1" value="{{offset}}">
+                <input type="number" data-field="offset" min="0" max="{{offsetMax}}" step="1" value="{{offset}}">
               </label>
               <label>
                 <span>{{localize "TTA.Moons.PhaseCount"}}</span>

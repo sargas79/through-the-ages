@@ -8,6 +8,8 @@ import {
   migrateMoons,
   migrateNoteFlags,
   needsMigration,
+  normalizeYearAffix,
+  resizeMonthLengths,
   resizeNames
 } from "../scripts/services/migration-service.js";
 
@@ -245,5 +247,101 @@ describe("migrateCalendarData moons", () => {
     assert.deepEqual(migrated.calendar.currentDate, { year: 3, month: 4, day: 5 });
     assert.deepEqual(migrated.calendar.currentTime, { hour: 8, minute: 15 });
     assert.deepEqual(migrateCalendarData(migrated), migrated);
+  });
+});
+
+describe("upgrading a pre-4 calendar", () => {
+  /** Stored data as schema 3 wrote it: uniform months, no era labels. */
+  const legacy = {
+    schemaVersion: 3,
+    calendar: {
+      monthsPerYear: 4,
+      daysPerMonth: 25,
+      monthNames: ["A", "B", "C", "D"],
+      weekdayNames: ["X", "Y"],
+      currentDate: { year: 5, month: 3, day: 25 },
+      currentTime: { hour: 1, minute: 2 },
+      moons: []
+    },
+    ages: []
+  };
+
+  it("gives every month the old uniform length", () => {
+    const migrated = migrateCalendarData(legacy);
+    assert.deepEqual(migrated.calendar.monthLengths, [25, 25, 25, 25]);
+    assert.equal(migrated.schemaVersion, SCHEMA_VERSION);
+  });
+
+  it("leaves the stored date exactly where it was", () => {
+    assert.deepEqual(migrateCalendarData(legacy).calendar.currentDate, { year: 5, month: 3, day: 25 });
+  });
+
+  it("defaults the era labels and the weekday offset", () => {
+    const { calendar } = migrateCalendarData(legacy);
+    assert.equal(calendar.yearPrefix, "");
+    assert.equal(calendar.yearSuffix, "");
+    assert.equal(calendar.weekdayOffset, 0);
+  });
+
+  it("is idempotent", () => {
+    const once = migrateCalendarData(legacy);
+    assert.deepEqual(migrateCalendarData(once), once);
+  });
+});
+
+describe("resizeMonthLengths", () => {
+  it("keeps stored lengths and fills the rest from the uniform default", () => {
+    assert.deepEqual(resizeMonthLengths([30, 1], 4, 28), [30, 1, 28, 28]);
+  });
+
+  it("truncates a list that is too long", () => {
+    assert.deepEqual(resizeMonthLengths([30, 1, 30, 7], 2, 28), [30, 1]);
+  });
+
+  it("clamps unusable entries into range", () => {
+    const lengths = resizeMonthLengths([0, -5, "x", 1000], 4, 28);
+    assert.deepEqual(lengths, [LIMITS.DAYS_MIN, LIMITS.DAYS_MIN, 28, LIMITS.DAYS_MAX]);
+  });
+});
+
+describe("month lengths in stored data", () => {
+  it("clamps the current day to its own month", () => {
+    const data = migrateCalendarData({
+      calendar: {
+        monthsPerYear: 3,
+        daysPerMonth: 30,
+        monthNames: ["A", "B", "C"],
+        monthLengths: [30, 1, 30],
+        currentDate: { year: 1, month: 2, day: 30 }
+      }
+    });
+    assert.deepEqual(data.calendar.currentDate, { year: 1, month: 2, day: 1 });
+  });
+
+  it("resizes the length list along with the month count", () => {
+    const data = migrateCalendarData({
+      calendar: { monthsPerYear: 2, daysPerMonth: 20, monthLengths: [30, 1, 30, 7] }
+    });
+    assert.deepEqual(data.calendar.monthLengths, [30, 1]);
+  });
+
+  it("bounds the weekday offset by the weekday count", () => {
+    const tooHigh = migrateCalendarData({
+      calendar: { weekdayNames: ["A", "B", "C"], weekdayOffset: 9 }
+    });
+    assert.equal(tooHigh.calendar.weekdayOffset, 2);
+
+    const negative = migrateCalendarData({
+      calendar: { weekdayNames: ["A", "B", "C"], weekdayOffset: -4 }
+    });
+    assert.equal(negative.calendar.weekdayOffset, 0);
+  });
+});
+
+describe("normalizeYearAffix", () => {
+  it("trims and shortens era labels", () => {
+    assert.equal(normalizeYearAffix("  DR  "), "DR");
+    assert.equal(normalizeYearAffix(undefined), "");
+    assert.equal(normalizeYearAffix("x".repeat(40)).length, LIMITS.YEAR_AFFIX_MAX);
   });
 });
