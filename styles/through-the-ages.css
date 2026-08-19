@@ -164,8 +164,9 @@
  * the controls toggle) carry their glyph in a Font Awesome class on the button
  * itself, so any font-family set here would win over that class and paint them
  * as tofu boxes. They are excluded from every rule below and keep the core
- * look. */
-.tta button:not(.header-control) {
+ * look. The exclusion sits in `:where()` so it adds no specificity: the rules
+ * further down that style one button class must still win over these. */
+.tta button:where(:not(.header-control)) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -184,9 +185,9 @@
   transition: background-color 130ms ease-out, border-color 130ms ease-out;
 }
 
-.tta button:not(.header-control):hover { background: color-mix(in srgb, var(--tta-text) 7%, transparent); }
-.tta button:not(.header-control):active { background: color-mix(in srgb, var(--tta-text) 14%, transparent); }
-.tta button:not(.header-control):disabled { opacity: 0.45; cursor: not-allowed; background: transparent; }
+.tta button:where(:not(.header-control)):hover { background: color-mix(in srgb, var(--tta-text) 7%, transparent); }
+.tta button:where(:not(.header-control)):active { background: color-mix(in srgb, var(--tta-text) 14%, transparent); }
+.tta button:where(:not(.header-control)):disabled { opacity: 0.45; cursor: not-allowed; background: transparent; }
 
 .tta button.tta-primary,
 .tta button[type="submit"] {
