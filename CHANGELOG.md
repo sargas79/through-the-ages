@@ -6,6 +6,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.8] - 2026-08-19
 
+### Fixed
+
+- Browsing the timeline no longer rebuilds the whole window. Stepping to another
+  span, jumping to an Age, returning to today and changing the filter each
+  re-rendered the mode pills, toolbar and Age bands along with the event list, and
+  because event descriptions are enriched asynchronously the repaint landed a tick
+  after the click: the window blanked, the body lost its scroll position, the band
+  row lost its horizontal scroll and the clicked control lost focus. Only the event
+  region is repainted now, each pass abandoning its result if a later one has
+  started. Switching mode and deleting an event still render in full, since both
+  change world state.
+- Age bands kept the generic button wash under the pointer instead of their own
+  colour, and the band being viewed lost its gradient entirely, because
+  `.tta button:hover` outweighed the band's own single-class rules.
+- Calendar day cells lost their paint: writing the header-control exclusion as a
+  bare `:not(.header-control)` raised the generic button rule's specificity, so it
+  began overriding `.tta-day-button` and its siblings.
+
+## [1.0.7] - 2026-08-19
+
+### Fixed
+
+- The window header's close and controls-toggle buttons rendered their glyphs as
+  tofu boxes inside a module-styled border. The module's blanket button rule set a
+  font-family that outranked Font Awesome's class on those buttons; the header is
+  now left to Foundry. Module-owned buttons are unaffected, their icons living in
+  child elements.
+
+## [1.0.6] - 2026-08-19
+
+### Fixed
+
+- Selecting a day no longer repaints the entire calendar. The full render rebuilt
+  the header and month grid for a change that reaches only the detail panel, and
+  landed a tick late because note bodies are enriched asynchronously, so the grid
+  flashed, scrolled back to the top and dropped focus on the clicked day. Only the
+  detail panel is rendered now and the selection marks move in place. Rapid clicks
+  cannot leave the panel describing one day while the grid marks another, and a
+  failed repaint leaves the previous panel on screen and is logged rather than
+  escaping as an unhandled rejection. Month and year navigation still render in
+  full.
+- The timeline's tick spine was built from its own queries rather than the filtered
+  events listed below it, so with a filter active it could mark events that had no
+  row in the list. The spine is now a direct read of what is listed.
+
+## [1.0.5] - 2026-08-18
+
 ### Changed
 
 - **The calendar is opened from the Journal sidebar, not the scene controls.** A
@@ -57,7 +104,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that instance instead of constructing a second one with the same id, which orphaned
   the first and left the window unopenable until the world was reloaded.
 
-## [1.2.0] - 2026-08-18
+## [1.0.4] - 2026-08-18
 
 ### Added
 
@@ -86,7 +133,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   configuration form did not carry the current time through, so migration refilled it
   with the default.
 
-## [1.1.1] - 2026-08-18
+## [1.0.3] - 2026-08-18
 
 ### Fixed
 
@@ -96,7 +143,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed the deprecated scene-control `onClick` callback in favour of Foundry VTT
   v14's `onChange` callback.
 
-## [1.1.0] - 2026-08-18
+## [1.0.2] - 2026-08-18
 
 ### Added
 
@@ -157,7 +204,11 @@ Initial release, targeting Foundry VTT v14 build 366.
 - Public API at `game.modules.get("through-the-ages").api`.
 
 [1.0.8]: https://github.com/sargas79/through-the-ages/releases/tag/v1.0.8
-[1.1.1]: https://github.com/sargas79/through-the-ages/releases/tag/v1.1.1
-[1.1.0]: https://github.com/sargas79/through-the-ages/releases/tag/v1.1.0
+[1.0.7]: https://github.com/sargas79/through-the-ages/releases/tag/v1.0.7
+[1.0.6]: https://github.com/sargas79/through-the-ages/releases/tag/v1.0.6
+[1.0.5]: https://github.com/sargas79/through-the-ages/releases/tag/v1.0.5
+[1.0.4]: https://github.com/sargas79/through-the-ages/releases/tag/v1.0.4
+[1.0.3]: https://github.com/sargas79/through-the-ages/releases/tag/v1.0.3
+[1.0.2]: https://github.com/sargas79/through-the-ages/releases/tag/v1.0.2
 [1.0.1]: https://github.com/sargas79/through-the-ages/releases/tag/v1.0.1
 [1.0.0]: https://github.com/sargas79/through-the-ages/releases/tag/v1.0.0
