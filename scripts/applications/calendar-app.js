@@ -81,6 +81,9 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
     this.timePreset = "minute";
   }
 
+  /** Ticket of the most recent detail repaint, used to discard stale ones. */
+  #detailPass = 0;
+
   static DEFAULT_OPTIONS = {
     classes: ["tta", "tta-app", "tta-calendar"],
     tag: "div",
@@ -274,18 +277,34 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
    * day changes nothing else on screen, and a full render would rebuild the
    * window underneath the pointer: the grid would flash, its scroll position
    * would jump back to the top and the clicked day would lose focus.
+   *
+   * Preparing the context enriches note bodies, so two quick clicks can be in
+   * flight at once and the earlier one can finish last. Each pass takes a ticket
+   * and abandons its result if another pass has started meanwhile, so the panel
+   * always ends up showing the day the grid says is selected.
    */
   async #refreshDetail() {
-    if (!this.rendered) return;
-    const context = await this._prepareContext({});
-    const detail = this.element.querySelector(".tta-detail");
-    if (!detail) return;
-    detail.innerHTML = await renderTemplate(
-      `modules/${MODULE_ID}/templates/partials/day-detail.hbs`,
-      context
-    );
-    this.#markSelectedDay();
-    this.#bindDetailListeners();
+    const ticket = ++this.#detailPass;
+    try {
+      if (!this.rendered) return;
+      const context = await this._prepareContext({});
+      if (ticket !== this.#detailPass || !this.rendered) return;
+      const html = await renderTemplate(
+        `modules/${MODULE_ID}/templates/partials/day-detail.hbs`,
+        context
+      );
+      if (ticket !== this.#detailPass || !this.rendered) return;
+      const detail = this.element.querySelector(".tta-detail");
+      if (!detail) return;
+      detail.innerHTML = html;
+      this.#markSelectedDay();
+      this.#bindDetailListeners();
+    } catch (error) {
+      // A failed repaint leaves the previous panel in place: stale but readable,
+      // where a full render would recover it at the cost of the flash this whole
+      // path exists to avoid.
+      log("error", "Failed to refresh the calendar detail panel", error);
+    }
   }
 
   /** Move the selected-day styling and aria state to the current selection. */
@@ -332,6 +351,9 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const day = Number(target.dataset.day);
     if (!Number.isInteger(day) || day === this.selectedDay) return;
     this.selectedDay = day;
+    // Move the marks before awaiting anything, so the grid answers the click
+    // immediately even while the panel is still being built.
+    this.#markSelectedDay();
     this.#refreshDetail();
   }
 
