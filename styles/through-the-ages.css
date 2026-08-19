@@ -160,7 +160,12 @@
 
 /* ---------- Buttons ------------------------------------------------------ */
 
-.tta button {
+/* The window header belongs to Foundry, not to the module. Its controls (close,
+ * the controls toggle) carry their glyph in a Font Awesome class on the button
+ * itself, so any font-family set here would win over that class and paint them
+ * as tofu boxes. They are excluded from every rule below and keep the core
+ * look. */
+.tta button:not(.header-control) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -179,9 +184,9 @@
   transition: background-color 130ms ease-out, border-color 130ms ease-out;
 }
 
-.tta button:hover { background: color-mix(in srgb, var(--tta-text) 7%, transparent); }
-.tta button:active { background: color-mix(in srgb, var(--tta-text) 14%, transparent); }
-.tta button:disabled { opacity: 0.45; cursor: not-allowed; background: transparent; }
+.tta button:not(.header-control):hover { background: color-mix(in srgb, var(--tta-text) 7%, transparent); }
+.tta button:not(.header-control):active { background: color-mix(in srgb, var(--tta-text) 14%, transparent); }
+.tta button:not(.header-control):disabled { opacity: 0.45; cursor: not-allowed; background: transparent; }
 
 .tta button.tta-primary,
 .tta button[type="submit"] {
