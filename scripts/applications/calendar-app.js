@@ -19,6 +19,7 @@ import {
   formatDate,
   formatTime,
   formatMonth,
+  formatYear,
   getAgeForYear,
   getCalendar,
   getCurrentAge,
