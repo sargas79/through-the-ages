@@ -2,26 +2,66 @@ name: Gemini PR Code Review
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [opened]
+
+concurrency:
+  group: gemini-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   review:
+    # A pull request from a fork gets a read-only token, so the review could not
+    # be posted back onto it.
+    if: github.event.pull_request.head.repo.fork == false
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
+      issues: write
       pull-requests: write
-
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Gemini AI Review
-        uses: sshnaidm/gemini-code-review-action@v2
+      - uses: actions/checkout@v4
         with:
-          gemini-key: ${{ secrets.GEMINI_API_KEY }}
-          # Optional: Customize the focus of the review
-          prompt: |
-            Please review this code diff. Focus on:
-            1. Potential security vulnerabilities
-            2. Performance bottlenecks
-            3. Readability and clean code principles
+          persist-credentials: false
+
+      - name: Review the pull request
+        uses: google-github-actions/run-gemini-cli@v0
+        env:
+          GEMINI_CLI_TRUST_WORKSPACE: "true"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          github_pr_number: ${{ github.event.pull_request.number }}
+          workflow_name: gemini-review
+          settings: |-
+            {
+              "model": {
+                "maxSessionTurns": 25
+              },
+              "mcpServers": {
+                "github": {
+                  "command": "docker",
+                  "args": [
+                    "run", "-i", "--rm",
+                    "-e", "GITHUB_PERSONAL_ACCESS_TOKEN",
+                    "ghcr.io/github/github-mcp-server:v0.27.0"
+                  ],
+                  "includeTools": [
+                    "add_comment_to_pending_review",
+                    "pull_request_read",
+                    "pull_request_review_write"
+                  ],
+                  "env": {
+                    "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+                  }
+                }
+              },
+              "tools": {
+                "core": []
+              }
+            }
+          extensions: |
+            [
+              "https://github.com/gemini-cli-extensions/code-review"
+            ]
+          prompt: "/pr-code-review"
