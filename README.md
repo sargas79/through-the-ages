@@ -92,9 +92,15 @@ documents, so both live in the same place.
 The calendar header shows the shared campaign date and 24-hour time. Its GM-only
 time menu advances by **1 minute**, **10 minutes**, **1 hour**, **10 hours**, **1 day
 (24 hours)**, **next adventure day (07:00 on the following calendar day)**, **1
-week**, or **1 configured calendar month**. Previous/next day controls remain
-available for corrections. Advancing rolls time, day, month, and year correctly, and
+week**, or **1 configured calendar month**. A **+1 day** control sits beside it for
+quick forward corrections. Advancing rolls time, day, month, and year correctly, and
 the campaign can never move earlier than Year 1, Month 1, Day 1 at 00:00.
+
+Moving the campaign **backwards** is deliberate by design: select the day in the
+month grid and use **Set as current date** in the day panel, or **Set date & time…**
+in the header. Both open the same form and both confirm before anything moves. There
+is no one-click control that rewinds the campaign, because a stray click on one would
+move the date for every connected player and change Foundry world time with it.
 
 Every module-controlled advance also calls Foundry's public world-time API with the
 same elapsed seconds. Through the Ages does not inspect or modify actor, item, or

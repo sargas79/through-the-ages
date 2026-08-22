@@ -6,6 +6,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **The `−1 day` header control is gone.** Moving the campaign date backwards now
+  takes a deliberate day selection: pick the day in the month grid and use **Set as
+  current date** in the day panel, or **Set date & time…** in the header. Both
+  confirm before anything moves. `+1 day` is unchanged, and `advanceDays(-1)` remains
+  on the public API for macros.
+- The world-time drift strip is drawn below the header instead of above it. Another
+  module changing world time — a combat round, most often — could make the strip
+  appear and push the time controls down under the pointer between a GM deciding to
+  click and the click landing.
+
+### Fixed
+
+- A GM could rewind the campaign a day by clicking `−1 day` when they meant `+1 day`,
+  after the drift strip appeared mid-combat and moved the button row. Removing the
+  control and stabilising the header closes both halves of that.
+
 ## [2.1.0] - 2026-08-19
 
 ### Added

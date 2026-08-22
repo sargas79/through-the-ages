@@ -60,11 +60,8 @@
       "Acknowledge": "Use current Foundry time",
       "Advance": "Advance",
       "AdvancePresetLabel": "Amount of time to advance",
-      "ControlsLabel": "Campaign time controls",
       "Hour": "Hour",
-      "MinusOneDay": "−1 day",
       "Minute": "Minute",
-      "NextDay": "Next day",
       "OutOfSync": "Foundry world time changed outside this calendar.",
       "PlusOneDay": "+1 day",
       "Preset": {
@@ -77,7 +74,8 @@
         "week": "1 week",
         "month": "1 month"
       },
-      "PrevDay": "Previous day",
+      "SetAsCurrent": "Set as current date",
+      "SetAsCurrentTooltip": "Move the campaign date to this day",
       "SetDate": "Set Date",
       "SetDateConfirmBody": "Changing campaign time also changes Foundry world time. Time-based effects handled by your game system may expire and cannot be restored automatically when time is moved back.",
       "SetDateConfirmTitle": "Confirm Campaign Time Change",

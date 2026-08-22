@@ -19,6 +19,12 @@
     {{#if canAddDayNote}}
       <button type="button" class="tta-ghost tta-compact" data-action="addDayNote">{{localize "TTA.Notes.AddDay"}}</button>
     {{/if}}
+    {{#if canChangeTime}}
+      {{#unless selectedIsCurrent}}
+        <button type="button" class="tta-ghost tta-compact" data-action="setSelectedAsCurrent"
+                data-tooltip="{{localize "TTA.Time.SetAsCurrentTooltip"}}">{{localize "TTA.Time.SetAsCurrent"}}</button>
+      {{/unless}}
+    {{/if}}
   </div>
 
   {{#if selectedMoons.length}}
