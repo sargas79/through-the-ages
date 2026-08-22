@@ -34,6 +34,7 @@ import {
   addMonths,
   addYears,
   buildMonthGrid,
+  clampDate,
   dayKey,
   daysInMonth,
   isSameDay,
@@ -102,11 +103,11 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
       nextYear: CalendarApp.onNextYear,
       gotoCurrent: CalendarApp.onGotoCurrent,
       selectDay: CalendarApp.onSelectDay,
-      prevDay: CalendarApp.onPrevDay,
       nextDay: CalendarApp.onNextDay,
       advanceTime: CalendarApp.onAdvanceTime,
       acknowledgeWorldTime: CalendarApp.onAcknowledgeWorldTime,
       setDate: CalendarApp.onSetDate,
+      setSelectedAsCurrent: CalendarApp.onSetSelectedAsCurrent,
       openConfig: CalendarApp.onOpenConfig,
       openTimeline: CalendarApp.onOpenTimeline,
       addDayNote: CalendarApp.onAddDayNote,
@@ -219,6 +220,7 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
       selectedMoons: getMoonPhases(this.selectedDate),
       selectedKey,
       selectedLabel: formatDate(this.selectedDate),
+      selectedIsCurrent: isSameDay(this.selectedDate, current),
       monthNoteKey,
       dayNotes,
       monthNotes,
@@ -364,11 +366,6 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
     this.#refreshDetail();
   }
 
-  static async onPrevDay() {
-    await advanceDays(-1);
-    CalendarApp.onGotoCurrent.call(this);
-  }
-
   static async onNextDay() {
     await advanceDays(1);
     CalendarApp.onGotoCurrent.call(this);
@@ -394,8 +391,24 @@ export class CalendarApp extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   static async onSetDate() {
+    await CalendarApp.#promptForCurrentDate.call(this, getCurrentDate());
+  }
+
+  /**
+   * Move the campaign date to the day selected in the grid.
+   *
+   * This is the only way back to an earlier date from the window: a backwards
+   * move takes a deliberate day selection and two confirmations rather than one
+   * click on a control that sits beside its opposite.
+   */
+  static async onSetSelectedAsCurrent() {
+    await CalendarApp.#promptForCurrentDate.call(this, this.selectedDate);
+  }
+
+  /** The Set Date form, opened over whichever date the caller starts from. */
+  static async #promptForCurrentDate(startDate) {
     const calendar = getCalendar();
-    const current = getCurrentDate();
+    const current = clampDate(startDate, calendar);
     const currentTime = getCurrentTime();
     const monthOptions = calendar.monthNames
       .map((name, index) => `<option value="${index + 1}" ${index + 1 === current.month ? "selected" : ""}>${foundry.utils.escapeHTML(name)}</option>`)

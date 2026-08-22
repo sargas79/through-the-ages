@@ -13,15 +13,6 @@
     </div>
   {{else}}
 
-    {{#if canChangeTime}}
-      {{#if worldTimeOutOfSync}}
-        <p class="tta-strip">
-          <span>{{localize "TTA.Time.OutOfSync"}}</span>
-          <button type="button" class="tta-compact" data-action="acknowledgeWorldTime">{{localize "TTA.Time.Acknowledge"}}</button>
-        </p>
-      {{/if}}
-    {{/if}}
-
     <header class="tta-header">
       <div class="tta-header-date">
         <span class="tta-current-date">{{currentDateLabel}}</span>
@@ -49,7 +40,6 @@
             {{/each}}
           </select>
           <button type="button" class="tta-primary tta-compact" data-action="advanceTime">{{localize "TTA.Time.Advance"}}</button>
-          <button type="button" class="tta-compact" data-action="prevDay">{{localize "TTA.Time.MinusOneDay"}}</button>
           <button type="button" class="tta-compact" data-action="nextDay">{{localize "TTA.Time.PlusOneDay"}}</button>
           <button type="button" class="tta-compact" data-action="setDate">{{localize "TTA.Time.SetDateEllipsis"}}</button>
         {{/if}}
@@ -63,6 +53,18 @@
         {{/if}}
       </div>
     </header>
+
+    {{!-- The strip sits below the header so that its appearance, which can be
+          triggered by any other module changing world time, never moves the
+          time controls under the pointer. --}}
+    {{#if canChangeTime}}
+      {{#if worldTimeOutOfSync}}
+        <p class="tta-strip">
+          <span>{{localize "TTA.Time.OutOfSync"}}</span>
+          <button type="button" class="tta-compact" data-action="acknowledgeWorldTime">{{localize "TTA.Time.Acknowledge"}}</button>
+        </p>
+      {{/if}}
+    {{/if}}
 
     <div class="tta-main">
       <div class="tta-grid-panel">
